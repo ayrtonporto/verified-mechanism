@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "problem_id": "p01_linear",
+  "tier": "easy",
+  "description": "# p01_linear (easy)\n\nLet $x$ be a real number with $3x + 7 = 22$. Show that $x = 5$.\n\n*Source: written for this kit. This is the warm-up problem the shipped baseline solves out of the box; see `examples/solved_p01/` for what a passing solution file looks like.*\n",
+  "challenge": "import Mathlib\n\n/-- If `3 * x + 7 = 22` for a real number `x`, then `x = 5`. -/\ntheorem p01_linear (x : ℝ) (h : 3 * x + 7 = 22) : x = 5 := by\n  sorry\n",
+  "problem_metadata": {
+    "source": "written for this kit"
+  },
+  "theorem_names": [
+    "p01_linear"
+  ],
+  "definition_names": [],
+  "numeric_answer_names": [],
+  "out_dir": "outputs/baseline/p01_linear",
+  "budget_usd": 1.0,
+  "time_limit_s": 1200.0,
+  "lean_image": "ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39",
+  "lean_check_timeout_s": 120,
+  "comparator_timeout_s": 180,
+  "verify_reserve_s": 120,
+  "agent": "baselines.simple_agent:create_agent",
+  "session_id": "20f8da1a867647c6a2c6bf251d382764"
+}

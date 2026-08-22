@@ -1,0 +1,160 @@
+{
+  "metadata": {
+    "baseline": "simple",
+    "model": "qwen/qwen3.5-flash-02-23",
+    "turns": 25,
+    "accepted_by_repl": false,
+    "attempts": [
+      {
+        "turn": 1,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 7
+      },
+      {
+        "turn": 2,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 8
+      },
+      {
+        "turn": 3,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 9
+      },
+      {
+        "turn": 4,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 12
+      },
+      {
+        "turn": 5,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 5
+      },
+      {
+        "turn": 6,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 8
+      },
+      {
+        "turn": 7,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 20
+      },
+      {
+        "turn": 8,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 23
+      },
+      {
+        "turn": 9,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 14
+      },
+      {
+        "turn": 10,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 1
+      },
+      {
+        "turn": 11,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 7
+      },
+      {
+        "turn": 12,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 2
+      },
+      {
+        "turn": 13,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 19
+      },
+      {
+        "turn": 14,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 8
+      },
+      {
+        "turn": 15,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 13
+      },
+      {
+        "turn": 16,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 1
+      },
+      {
+        "turn": 17,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 12
+      },
+      {
+        "turn": 18,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 12
+      },
+      {
+        "turn": 19,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 29
+      },
+      {
+        "turn": 20,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 13
+      },
+      {
+        "turn": 21,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 15
+      },
+      {
+        "turn": 22,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 7
+      },
+      {
+        "turn": 23,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 12
+      },
+      {
+        "turn": 24,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 9
+      },
+      {
+        "turn": 25,
+        "accepted": false,
+        "timed_out": false,
+        "message_count": 8
+      }
+    ]
+  }
+}

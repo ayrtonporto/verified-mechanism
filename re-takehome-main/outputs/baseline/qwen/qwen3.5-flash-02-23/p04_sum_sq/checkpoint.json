@@ -1,0 +1,16 @@
+{
+  "metadata": {
+    "baseline": "simple",
+    "model": "qwen/qwen3.5-flash-02-23",
+    "turns": 1,
+    "accepted_by_repl": true,
+    "attempts": [
+      {
+        "turn": 1,
+        "accepted": true,
+        "timed_out": false,
+        "message_count": 0
+      }
+    ]
+  }
+}

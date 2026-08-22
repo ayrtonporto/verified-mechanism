@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "set": "sample",
+  "problems": [
+    {
+      "problem_id": "p01_linear",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 6.96e-05,
+      "wall_s": 60.024,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "p02_frac_cancel",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 0.00022611,
+      "wall_s": 75.868,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "p03_sq_ge_two_ab",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 0.00032403,
+      "wall_s": 99.072,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "p04_sum_sq",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 0.00027337,
+      "wall_s": 79.221,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "p05_gcd_mersenne",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 0.00066188,
+      "wall_s": 140.446,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "p06_pow_mod",
+      "status": "failed",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.00402443,
+      "wall_s": 712.557,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "WARNING: THIS IS NOT REAL LANDRUN! UNSAFELY RUNNING exec lake build Challenge\nWARNING: THIS IS NOT REAL LANDRUN! UNSAFELY RUNNING exec /opt/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export Challenge -- p06_pow_mod propext Classical.choice Quot.sound Nat.add Nat.sub Nat.mul Nat.pow Nat.gcd Nat.div Nat.mod Nat.beq Nat.ble Nat.land Nat.lor Nat.xor Nat.shiftLeft Nat.shiftRight String.ofList p06_answer\nWARNING: THIS IS NOT REAL LANDRUN! UNSAFELY RUNNING exec lake build Solution\nerror: build failed\nuncaught exception: Child exited with 1\n"
+    },
+    {
+      "problem_id": "p07_least_divisible",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 0.00467249,
+      "wall_s": 794.908,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "p08_sum_products",
+      "status": "cost_unknown",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.00682793,
+      "wall_s": 1112.57,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "agent exceeded 1080.0s"
+    },
+    {
+      "problem_id": "p09_imo1964",
+      "status": "cost_unknown",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.00724167,
+      "wall_s": 1104.016,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "agent exceeded 1080.0s"
+    },
+    {
+      "problem_id": "p10_factorial_pow",
+      "status": "cost_unknown",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.00598044,
+      "wall_s": 1109.498,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "agent exceeded 1080.0s"
+    },
+    {
+      "problem_id": "putnam_2018_a1",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 0.00521722,
+      "wall_s": 1090.375,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "putnam_2020_a2",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 0.0024671199999999997,
+      "wall_s": 550.262,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    },
+    {
+      "problem_id": "rmo_2000_2",
+      "status": "cost_unknown",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.0061724399999999995,
+      "wall_s": 1109.809,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "agent exceeded 1080.0s"
+    },
+    {
+      "problem_id": "rmo_2000_3",
+      "status": "cost_unknown",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.00605592,
+      "wall_s": 1084.722,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "agent exceeded 1080.0s"
+    },
+    {
+      "problem_id": "rmo_2000_6",
+      "status": "cost_unknown",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.0062511599999999995,
+      "wall_s": 1087.799,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "agent exceeded 1080.0s"
+    },
+    {
+      "problem_id": "rmo_2001_2",
+      "status": "cost_unknown",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 0.00536983,
+      "wall_s": 1100.058,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "agent exceeded 1080.0s"
+    }
+  ],
+  "total_points": 8,
+  "max_points": 16,
+  "actual_cost_usd": 0.06183564,
+  "wall_s_sum": 11311.205,
+  "run_id": "5803516b94ad43f997b83d28d00a7a63",
+  "wall_s": 2892.041,
+  "finished_at": "2026-08-18T23:27:24.558908+00:00"
+}

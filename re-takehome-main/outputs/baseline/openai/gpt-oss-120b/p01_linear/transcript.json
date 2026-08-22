@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "problem_id": "p01_linear",
+  "calls": [
+    {
+      "call_id": "98c6c23c79bb4e74bbd41db0fd42b7c2",
+      "request": {
+        "model": "openai/gpt-oss-120b",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are writing a complete Lean 4 file using Mathlib.\nReturn only the complete Lean code, preferably in one ```lean code block.\nPreserve the theorem names and statements from the challenge.\nDo not use sorry, admit, axioms, or unsafe escapes.\nThe file must compile as-is."
+          },
+          {
+            "role": "user",
+            "content": "Problem id: p01_linear\nBaseline turn: 1/25\n\nProblem description:\n# p01_linear\n\nLet $x$ be a real number with $3x + 7 = 22$. Show that $x = 5$.\n\n\nChallenge Lean file:\n```lean\nimport Mathlib\n\n/-- If `3 * x + 7 = 22` for a real number `x`, then `x = 5`. -/\ntheorem p01_linear (x : ℝ) (h : 3 * x + 7 = 22) : x = 5 := by\n  sorry\n\n```"
+          }
+        ],
+        "max_tokens": 12000,
+        "stream": false,
+        "provider": {
+          "allow_fallbacks": false,
+          "require_parameters": true,
+          "max_price": {
+            "prompt": 0.1,
+            "completion": 0.5
+          }
+        },
+        "temperature": 0.2
+      },
+      "started_at": "2026-08-18T22:39:12.718631+00:00",
+      "reserved_cost_usd": 0.0067001000000000005,
+      "response": {
+        "id": "gen-1787092752-vpUhQCg7akeabPNsmUYi",
+        "object": "chat.completion",
+        "created": 1787092752,
+        "model": "openai/gpt-oss-120b",
+        "provider": "CoreWeave",
+        "system_fingerprint": null,
+        "service_tier": null,
+        "choices": [
+          {
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop",
+            "native_finish_reason": "stop",
+            "message": {
+              "role": "assistant",
+              "content": "```lean\nimport Mathlib\n\n/-- If `3 * x + 7 = 22` for a real number `x`, then `x = 5`. -/\ntheorem p01_linear (x : ℝ) (h : 3 * x + 7 = 22) : x = 5 := by\n  linarith\n```\n",
+              "refusal": null,
+              "reasoning": "We need to fill proof. Simple algebra. In Lean, we can use linear arithmetic. Use `linarith` or `ring`. Since it's ℝ, we can do:\n\n```\nhave : 3 * x = 15 := by\n  have := congrArg (fun t => t - 7) h\n  simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc] using this\n```\n\nBut easier: use `linarith` which solves linear equations over ℝ. So:\n\n```\n  linarith\n```\n\nBut need to import `Mathlib.Tactic.Linarith`. Already `import Mathlib` includes many tactics. `linarith` is available. So final code:\n\n```\nimport Mathlib\n\n/-- If `3 * x + 7 = 22` for a real number `x`, then `x = 5`. -/\ntheorem p01_linear (x : ℝ) (h : 3 * x + 7 = 22) : x = 5 := by\n  linarith\n```\n\nCheck: `linarith` with hypothesis `h : 3 * x + 7 = 22`. It will deduce `x = 5`. Should work.\n\nThus final answer.",
+              "reasoning_details": [
+                {
+                  "type": "reasoning.text",
+                  "text": "We need to fill proof. Simple algebra. In Lean, we can use linear arithmetic. Use `linarith` or `ring`. Since it's ℝ, we can do:\n\n```\nhave : 3 * x = 15 := by\n  have := congrArg (fun t => t - 7) h\n  simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc] using this\n```\n\nBut easier: use `linarith` which solves linear equations over ℝ. So:\n\n```\n  linarith\n```\n\nBut need to import `Mathlib.Tactic.Linarith`. Already `import Mathlib` includes many tactics. `linarith` is available. So final code:\n\n```\nimport Mathlib\n\n/-- If `3 * x + 7 = 22` for a real number `x`, then `x = 5`. -/\ntheorem p01_linear (x : ℝ) (h : 3 * x + 7 = 22) : x = 5 := by\n  linarith\n```\n\nCheck: `linarith` with hypothesis `h : 3 * x + 7 = 22`. It will deduce `x = 5`. Should work.\n\nThus final answer.",
+                  "format": "unknown",
+                  "index": 0
+                }
+              ]
+            }
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 263,
+          "completion_tokens": 363,
+          "total_tokens": 626,
+          "cost": 6.96e-05,
+          "is_byok": false,
+          "prompt_tokens_details": {
+            "cached_tokens": 64,
+            "cache_write_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+          },
+          "cost_details": {
+            "upstream_inference_cost": 6.96e-05,
+            "upstream_inference_prompt_cost": 7.89e-06,
+            "upstream_inference_completions_cost": 6.171e-05
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 211,
+            "image_tokens": 0,
+            "audio_tokens": 0
+          }
+        }
+      },
+      "actual_cost_usd": 6.96e-05,
+      "latency_ms": 9625,
+      "status": "ok"
+    }
+  ],
+  "actual_cost_usd": 6.96e-05
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "problem_id": "p05_gcd_mersenne",
+  "tier": "medium",
+  "description": "# p05_gcd_mersenne (medium)\n\nWhat is the greatest common divisor of $2^{1001} - 1$ and $2^{1012} - 1$? Show that it is $2^{11} - 1$.\n\n*Source: miniF2F `mathd_numbertheory_284` (Apache-2.0).*\n",
+  "challenge": "import Mathlib\n\n/-- What is the greatest common divisor of `2 ^ 1001 - 1` and `2 ^ 1012 - 1`?\nShow that it is `2 ^ 11 - 1`. -/\ntheorem p05_gcd_mersenne : Nat.gcd (2 ^ 1001 - 1) (2 ^ 1012 - 1) = 2 ^ 11 - 1 := by\n  sorry\n",
+  "problem_metadata": {
+    "source": "miniF2F mathd_numbertheory_284 (Apache-2.0)"
+  },
+  "theorem_names": [
+    "p05_gcd_mersenne"
+  ],
+  "definition_names": [],
+  "numeric_answer_names": [],
+  "out_dir": "outputs/baseline/p05_gcd_mersenne",
+  "budget_usd": 1.0,
+  "time_limit_s": 1200.0,
+  "lean_image": "ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39",
+  "lean_check_timeout_s": 120,
+  "comparator_timeout_s": 180,
+  "verify_reserve_s": 120,
+  "agent": "baselines.simple_agent:create_agent",
+  "session_id": "f481a00856b44378b068212d3fe8eaee"
+}

@@ -1,0 +1,6 @@
+{
+  "metadata": {
+    "baseline_turn": 3,
+    "model": "openai/gpt-oss-120b"
+  }
+}

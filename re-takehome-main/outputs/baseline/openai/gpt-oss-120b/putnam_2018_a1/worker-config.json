@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "problem_id": "putnam_2018_a1",
+  "description": "# putnam_2018_a1\n\nFind all ordered pairs $(a,b)$ of positive integers for which\n\n$$\\frac{1}{a} + \\frac{1}{b} = \\frac{3}{2018}.$$\n\nFill in `putnam_2018_a1_solution` and prove the theorem.\n",
+  "challenge": "import Mathlib\n\nabbrev putnam_2018_a1_solution : Set (ℤ × ℤ) := by\n  sorry\n\ntheorem putnam_2018_a1\n  (a b : ℤ)\n  (h : 0 < a ∧ 0 < b) :\n  ((1 : ℚ) / a + (1 : ℚ) / b = (3 : ℚ) / 2018) ↔\n    (⟨a, b⟩ ∈ putnam_2018_a1_solution) := by\n  sorry\n",
+  "problem_metadata": {},
+  "theorem_names": [
+    "putnam_2018_a1"
+  ],
+  "definition_names": [
+    "putnam_2018_a1_solution"
+  ],
+  "numeric_answer_names": [],
+  "out_dir": "outputs/baseline/20260818T223912Z/putnam_2018_a1",
+  "budget_usd": 1.0,
+  "time_limit_s": 1200.0,
+  "lean_image": "ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39",
+  "lean_check_timeout_s": 120,
+  "comparator_timeout_s": 180,
+  "verify_reserve_s": 120,
+  "agent": "baselines.simple_agent:create_agent",
+  "session_id": "9bb3b73b7f014cf5950c6078687c1ef3"
+}

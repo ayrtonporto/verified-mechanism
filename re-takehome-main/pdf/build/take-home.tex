@@ -1,0 +1,243 @@
+% Research Engineer take-home task, light theme.
+% Preamble shared with the RS brief (rs/build/take-home.tex); palette and type
+% follow verifiedmechanisms.ai in its light theme.
+%
+% Build: ./build.sh  (or pdflatex take-home.tex)
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[light]{sourceserifpro}
+\usepackage[sfdefault,scaled=0.96]{inter}
+\usepackage[xcharter]{newtxmath}
+\usepackage{microtype}
+\usepackage[a4paper,top=1.65cm,bottom=1.45cm,left=2.85cm,right=2.85cm,footskip=0.85cm]{geometry}
+\usepackage{xcolor}
+\usepackage{pagecolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{needspace}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+
+% ---------------------------------------------------------------- palette ----
+
+\definecolor{vmbg}{HTML}{FDF8EE}        % cream ground
+\definecolor{vmsurface}{HTML}{FFFFFF}
+\definecolor{vmink}{HTML}{071737}       % navy text
+\definecolor{vmdim}{HTML}{3E4861}
+\definecolor{vmmute}{HTML}{646D83}
+\definecolor{vmblue}{HTML}{123A7E}      % links
+\definecolor{vmcyan}{HTML}{0B6E86}
+\definecolor{vmcoral}{HTML}{C8382D}     % eyebrow
+\definecolor{vmborder}{HTML}{E5DDCB}
+\definecolor{vmborderlit}{HTML}{CFC4AB}
+\definecolor{vmnote}{HTML}{FAECE2}      % coral at 6% over cream
+\definecolor{vmcode}{HTML}{ECEEE7}      % cyan at 7% over cream
+\definecolor{vmcard}{HTML}{F9F4EB}      % navy at 1.8% over cream
+
+\pagecolor{vmbg}
+\color{vmink}
+
+\hypersetup{
+  colorlinks=true, linkcolor=vmblue, urlcolor=vmblue, citecolor=vmblue,
+  pdftitle={Research Engineer take-home task},
+  pdfauthor={Verified Mechanisms},
+  pdfsubject={Hiring},
+}
+
+% ------------------------------------------------------------------ type ----
+
+\newcommand{\dispfont}{\fontfamily{SourceSerifPro-LF}\selectfont}
+\linespread{1.03}\selectfont
+\setlength{\parskip}{0.38em}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{2em}
+
+\newcommand{\eyebrow}[1]{%
+  {\color{vmcoral}\bfseries\fontsize{8.2}{10}\selectfont\textls[190]{\MakeUppercase{#1}}}}
+
+\newcommand{\code}[1]{{\color{vmcyan}\ttfamily\fontsize{9.4}{11}\selectfont #1}}
+
+% ------------------------------------------------------------- headings ----
+
+\titleformat{\section}
+  {\dispfont\color{vmink}\fontsize{17}{20}\selectfont}
+  {}{0pt}{}
+\titlespacing*{\section}{0pt}{0.75em}{0.3em}
+
+\newcommand{\vmsection}[1]{\Needspace*{5\baselineskip}\section*{#1}\addcontentsline{toc}{section}{#1}}
+
+\newcommand{\partend}{\par\vspace{0.8em}%
+  {\color{vmborderlit}\rule{\linewidth}{0.5pt}}\par}
+
+\newcommand{\parthead}[2]{%
+  \Needspace*{6\baselineskip}%
+  \par\vspace{0.8em}%
+  {\color{vmborderlit}\rule{\linewidth}{0.5pt}}\par\vspace{0.6em}%
+  \eyebrow{#1}\par\vspace{0.3em}%
+  {\dispfont\color{vmink}\fontsize{20}{24}\selectfont\raggedright\hyphenpenalty=10000 #2\par}
+  \vspace{0.35em}}
+
+% ------------------------------------------------------------------ lists ----
+
+\newenvironment{bullets}
+  {\begin{itemize}[leftmargin=1.15em,itemsep=0.26em,topsep=0.25em,parsep=0pt,
+                   label={\color{vmcyan}\raisebox{0.12ex}{\scriptsize$\blacksquare$}}]}
+  {\end{itemize}}
+
+% ------------------------------------------------------------------ boxes ----
+
+\newtcolorbox{question}{
+  enhanced, breakable, colback=vmcard, colframe=vmborderlit,
+  boxrule=0pt, leftrule=2pt, arc=0pt, outer arc=0pt,
+  left=1.25em, right=1.25em, top=0.85em, bottom=0.85em,
+  boxsep=0pt, before skip=0.85em, after skip=0.85em,
+  fontupper=\color{vmdim}
+}
+
+\newtcolorbox{callout}{
+  enhanced, breakable, colback=vmnote, colframe=vmnote,
+  boxrule=0pt, arc=2pt, outer arc=2pt,
+  left=1.25em, right=1.25em, top=0.85em, bottom=0.85em,
+  boxsep=0pt, before skip=0.85em, after skip=0.4em,
+  fontupper=\color{vmdim}
+}
+
+\newtcolorbox{submitbox}{
+  enhanced, colback=vmcode, colframe=vmcode,
+  boxrule=0pt, arc=2pt, outer arc=2pt,
+  left=1.0em, right=1.0em, top=0.6em, bottom=0.6em,
+  boxsep=0pt, before skip=0.8em, after skip=0.8em,
+  halign=center
+}
+
+% ------------------------------------------------------------ title block ----
+
+\newcommand{\vmtitleblock}{%
+  \thispagestyle{empty}%
+  \noindent
+  \raisebox{-0.34\height}{\includegraphics[height=15mm]{logo-light.pdf}}\hspace{0.6em}%
+  {\dispfont\color{vmink}\fontsize{15}{18}\selectfont Verified Mechanisms}
+
+  \vspace{0.75em}
+  {\color{vmborder}\rule{\linewidth}{0.5pt}}
+  \vspace{0.8em}
+
+  \eyebrow{Research Engineer}\par
+  \vspace{0.5em}
+  {\dispfont\color{vmink}\fontsize{34}{38}\selectfont Take-home task}\par
+  \vspace{0.35em}
+  {\color{vmdim}\fontsize{11.4}{17}\selectfont
+  \begin{bullets}
+    \item This task has two parts: make two fixed small models collaborate to solve
+          math problems and prove the answers in Lean 4, then understanding how collaboration improves performance.
+    \item Part one is scored mechanically on a private holdout set: points only for proofs
+          the Lean compiler accepts. We clone your fork and run it ourselves.
+    \item Submit by \textbf{August 24} (EOD Anywhere on Earth) by uploading your writeup as a
+          \textbf{PDF} to the Google form shared with this task; your repository link goes in
+          the same form.
+  \end{bullets}}\par
+  \vspace{0.55em}
+  {\color{vmborder}\rule{\linewidth}{0.5pt}}
+}
+
+% ---------------------------------------------------------------- running ----
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot[R]{{\color{vmmute}\fontsize{8.4}{10}\selectfont \thepage}}
+
+\begin{document}
+
+
+\vmtitleblock
+
+\vmsection{Background}
+
+\begin{question}
+Our autoresearch framework has LLM agents find theorems about the internal computations of
+transformers and verify them in Lean 4. We believe we can get more from models when
+they work together, and that unlocking this potential depends on finding the right way
+for them to collaborate. This task recreates the
+setting at a smaller scale with two lightweight models.
+\end{question}
+
+\noindent
+Everything you need lives in one repository:
+
+\begin{submitbox}
+\href{https://github.com/VerifiedMechanisms/re-takehome}%
+{\code{github.com/VerifiedMechanisms/re-takehome}}
+\end{submitbox}
+
+\noindent
+\begin{bullets}
+\item The kit contains ten development problems, a working single-model baseline,
+scripts that set up Lean and Mathlib for you, and the one-page rules in
+\href{https://github.com/VerifiedMechanisms/re-takehome/blob/main/RULES.md}%
+{\code{RULES.md}}.
+\item Your OpenRouter API key arrives in the same email as this PDF: a
+\textbf{\$50 budget, on us}, for the two models named in the rules. 
+\item Build with whatever you like, including your own chatbots and coding agents; at run time your system talks
+only to the two fixed models through our key.
+\end{bullets}
+\newpage
+\parthead{Part one}{Make two models prove things}
+
+Each problem is a folder: \code{problem.md} states it in English,
+\code{challenge.lean} states it formally, with \code{sorry} where the proof (and on some
+problems a numeric answer) goes. Your system turns the folder into a Lean file the
+compiler accepts, with our statement unchanged.
+
+Build the coordination layer. Both models must take part in every scored attempt; how
+you divide the work between them is the design problem. We would rather see a simple
+design we can fully understand than a complicated one that scores marginally better;
+if two systems score about the same, we prefer the simpler one.
+
+Scoring is mechanical, on a private holdout with the dev set's format and grading:
+about a dozen problems whose difficulty may vary, one point per correct problem, zero
+for incorrect. A proof counts only if it passes the open-source Lean comparator
+(\href{https://github.com/leanprover/comparator}{\code{leanprover/comparator}}):
+it must compile against our pristine statement with no \code{sorry} and no axioms
+beyond the standard three. A problem that spends more than \$1 scores zero even if
+the proof is correct. We run your repository once per problem at 20 minutes and
+\$1 each.
+
+
+\parthead{Part two}{The eval science of collaboration}
+
+Is your two-model system better than either model alone, and if so, where exactly does
+one model fill the other's gaps? Run three conditions on the dev set or your own set of problems: \textbf{model A solo, model B
+solo, and your collaboration}. 
+
+Report per problem (which problems flipped between
+conditions), while accounting for confounding factors as much as possible. Classify every failed attempt: wrong informal
+solution; right solution but failed formalization; proof repair stuck; harness error.
+Include at least two quoted transcript case studies, the holdout score you expect with a
+sentence of reasoning, and a spend ledger.
+
+
+\partend
+
+\vmsection{Instructions}
+\begin{bullets}
+  \item \textbf{What should the writeup look like?} Two to ten pages, appendix
+excluded. The repository carries the code; the PDF explains design choices, results
+and the writeup for the eval science of collaboration.
+  \item \textbf{Rules.} Read
+\href{https://github.com/VerifiedMechanisms/re-takehome/blob/main/RULES.md}%
+{\code{RULES.md}} before building. 
+  \item \textbf{Using LLMs.} Use LLM assistance freely for the harness and the writeup
+(Codex, Claude Code, whatever you normally reach for); disclose which models and tools
+you used and how in the Google Form.
+\end{bullets}
+
+If you have any questions, please write to
+\href{mailto:hiring@verifiedmechanisms.ai}{\code{hiring@verifiedmechanisms.ai}}.
+\end{document}

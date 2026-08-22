@@ -1,0 +1,21 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e '.[dev]'
+      - run: python -m compileall -q src baselines submission run.py docker/entrypoint.py
+      - run: pytest -q
+      - run: python -c 'from pathlib import Path; from re_harness.manifest import load_problem_set; assert len(load_problem_set(Path("sample-problems")).problems) == 16'
