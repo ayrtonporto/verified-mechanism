@@ -1,81 +1,135 @@
 # Setup blockers — qué arreglar para empezar
 
-Estado al **2026-08-23**. Objetivo: dejar un entorno rápido y estable para desarrollar el agente y
-correr experimentos. Lo demás del repo (kit `re-takehome-main/`) queda intacto.
+Estado al **2026-08-23 (tarde)**. Objetivo: entorno rápido y estable para el agente y
+experimentos. El kit `re-takehome-main/` se toca solo con overrides locales documentados.
 
-Resumen: el entorno elegido es **Ryzen 7 7730U vía WSL2 Ubuntu-22.04** (rápido, con AVX2). `sshrun`
-(Linux 2011) funciona pero es ~10-15× más lento (14 min por operación) → solo fallback. El único
-bloqueo real hoy es **RAM del host de Windows**.
+**WSL desbloqueado.** Imagen Lean pull + health + smoke + REPL path verificados.
 
 ---
 
-## 🔴 Blocker 1 — RAM del host (el único que impide arrancar)
+## ✅ Resuelto hoy — WSL setup completo
 
-**Síntoma:** el `docker pull` (y `import Mathlib`) mata la VM de WSL a mitad.
-
-**Causa (medida):** 15.3 GB totales; Windows usa ~9.6 GB → solo ~5.7 GB libres. Cuando el workload
-infla `vmmem` a ~5-6.5 GB, el host cae a <1 GB libre y Windows **termina la VM**. El guest nunca
-llega a su cap de 8 GB — se queda sin RAM **el host**, no el guest.
-
-**Fix (acción tuya, 1 min):** cerrar apps pesadas antes de correr el kit.
-
-| App | Libera |
+| Check | Resultado |
 |---|---|
-| **Chrome** (25 procesos) | **~3.7 GB** |
-| **ChatGPT** | **~1.2 GB** |
+| `docker pull` imagen pinned | OK (~4–5 min con Chrome cerrado) |
+| `health` | OK — Lean **v4.32.0**, Mathlib `81a5d257`, comparator `07bc4ea4` |
+| `smoke_test.sh` (comparator `p01_linear` + `linarith`) | **passed** en **~1 m 48 s** |
+| REPL agent path (`services.lean.check_file`) | **accepted=True** en **~9 s** (warm) |
 
-- Cerrando esos dos → host libre pasa de ~5.7 a **~10-11 GB** → la VM puede usar sus ~6.5 GB de
-  Mathlib sin matar al host.
-- **No** cerrar Claude Desktop (es esta sesión). No hace falta subir el cap de WSL (dejarlo en 8 GB).
+Imagen:
 
-**Verificación:** con Chrome/ChatGPT cerrados, `docker pull` completa y el health check pasa.
-
----
-
-## 🟡 Blocker 2 — Mantener viva la VM durante trabajos largos
-
-**Síntoma:** trabajos lanzados con `nohup`/desacoplados mueren cuando el cliente `wsl.exe` retorna.
-
-**Causa:** la VM se apaga si no hay un cliente `wsl.exe` attached (aunque haya procesos corriendo).
-
-**Fix:** correr pulls/experimentos largos como comando **en primer plano** (attached) con timeout
-amplio, no desacoplados. Para runs de horas, mantener una sesión `wsl.exe` abierta.
+```text
+ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39
+```
 
 ---
 
-## 🟢 Ya resueltos (no requieren acción)
+## Hallazgo crítico — el tope de 5 GB del container no alcanza en esta laptop
 
-- ✅ **Docker en WSL**: ya instalado (v29.1.3), datos en **D:** (`D:\WSL\Ubuntu2204`), no toca C:.
-- ✅ **Python 3.11**: instalado con `uv` (3.11.16) + shim `~/.pyshim/python3`; el python del sistema
-  (3.10) quedó intacto. Resuelve el requisito `>=3.11` del kit sin editar el kit.
-- ✅ **Repo clonado** en WSL nativo (`~/verified-mechanism`, no `/mnt/d`) y en `sshrun`. Remotes
-  limpios (sin token).
-- ✅ **`avid-server`** detenido en WSL + auto-restart desactivado (usaba solo 98 MB; reversible con
-  `docker start avid-server`). Imagen `avid-journal` intacta.
-- ✅ **`sshrun`** 100% funcional como fallback: imagen, health y smoke OK.
+El harness fija `--memory 5g` en cada container Lean/Comparator
+(`src/re_harness/lean.py::_hardened_docker_args`).
 
----
+Medido:
 
-## ⚪ Decisión pendiente (no bloquea el arranque)
+| Container memory | `import Mathlib` / smoke |
+|---|---|
+| **5g** (default kit) | thrashing (~150–160 GB block I/O), timeout a 180s y a 900s |
+| **8g** (override local) | `import Mathlib` **~44 s**; smoke completo **~1 m 48 s**; REPL warm **~9 s** |
 
-- **VM en la nube (16-32 GB) para los runs largos de la parte 2.** La laptop de 15 GB alcanza para
-  desarrollo/testing con apps cerradas, pero es frágil para corridas desatendidas de horas. Coincide
-  con el esquema original: **dev/testing en la Ryzen, runs largos en un entorno dedicado.**
-
----
-
-## Secuencia para arrancar (una vez liberada la RAM)
+Override local (no cambia el default de judging):
 
 ```bash
-# 1) (en Windows) cerrar Chrome y ChatGPT
+export LEAN_CONTAINER_MEMORY=8g
+```
 
-# 2) (en WSL) completar el setup del kit — attached, con host RAM libre
+Parche mínimo en el kit (Windows + copia WSL): lee `LEAN_CONTAINER_MEMORY` con default `5g`.
+Judging sin esa variable sigue en 5g.
+
+También hace falta **RAM de host libre**:
+
+- Cerrar **Chrome** (~3 GB) antes de runs.
+- WSL `.wslconfig`: `memory=10GB` (subido desde 8GB tras el pull exitoso).
+- Host total 15 GB: viable con Chrome cerrado; frágil con Chrome + Mathlib a la vez.
+
+---
+
+## Cómo arrancar un run (checklist)
+
+```bash
+# 1) Windows: cerrar Chrome (y ChatGPT si está)
+# 2) Host free RAM >= ~10 GB recomendado antes de cold Mathlib
+
+wsl -d Ubuntu-22.04
+export PATH="$HOME/.pyshim:$HOME/.local/bin:$PATH"
+export LEAN_CONTAINER_MEMORY=8g
+export COMPARATOR_TIMEOUT_S=900   # cold comparator; warm puede bajar
 cd ~/verified-mechanism/re-takehome-main
-PATH="$HOME/.pyshim:$HOME/.local/bin:$PATH" bash scripts/setup.sh   # pull imagen + health
 
-# 3) verificar sin key (debería tardar ~1-2 min)
+# sin key:
 bash scripts/smoke_test.sh
 
-# 4) recién ahí: agregar la key en .env y empezar baselines solo
-cp .env.example .env    # y pegar OPENROUTER_API_KEY
+# con key:
+# cp .env.example .env   # pegar OPENROUTER_API_KEY
+# .venv/bin/python run.py --problems sample-problems --out outputs \
+#   --agent baselines.simple_agent:create_agent
 ```
+
+Scripts helper en `~/verified-mechanism/` (solo WSL, no son el kit):
+
+- `do_setup.sh` — pull + health + pip
+- `do_smoke.sh` — smoke con overrides locales
+- `diag_mathlib_import.sh` — diagnóstico de memoria del container
+- `repl_smoke.py` — path REPL del agente
+
+---
+
+## 🟡 Operativos (no bloquean el arranque del kit)
+
+### Mantener viva la VM
+
+Trabajos largos: cliente `wsl.exe` **attached**. Detached/`nohup` mueren cuando el cliente sale.
+
+### Dos copias del repo
+
+| Copia | Path | Uso |
+|---|---|---|
+| Windows (source of truth para git en esta sesión) | `D:\Mis documentos\Documentos\Verified Mechanism` | commits desde Windows/Hermes |
+| WSL nativo (runtime) | `~/verified-mechanism` | docker/Lean runs |
+
+**Sincronizar a mano** tras editar código en Windows:
+
+```bash
+# ejemplo: copiar lean.py parcheado
+cp "/mnt/d/Mis documentos/Documentos/Verified Mechanism/re-takehome-main/src/re_harness/lean.py" \
+   ~/verified-mechanism/re-takehome-main/src/re_harness/lean.py
+```
+
+O `git pull` en WSL cuando el cambio esté commiteado/pusheado.
+
+La copia WSL estaba en `86e5ebd` cuando Windows ya tenía commits más nuevos + el parche local.
+
+### `.env` / OpenRouter key
+
+Aún **no** hay `.env` en WSL ni en Windows. Siguiente paso humano: pegar la key del mail.
+
+### sshrun
+
+Fallback lento (~14 min/op). No usar para Part Two (sesga timeouts). Imagen Lean puede faltar allí; no prioritario.
+
+---
+
+## ⚪ Decisión pendiente
+
+- **VM cloud 16–32 GB** para matrices largas desatendidas de Part Two.
+  Dev/testing en Ryzen+WSL con Chrome cerrado ya funciona.
+
+---
+
+## Ya resueltos (históricos)
+
+- ✅ Docker en WSL (v29.1.3), datos en **D:**
+- ✅ Python 3.11.16 vía `uv` + `~/.pyshim/python3`
+- ✅ Repo clonado en WSL nativo y en sshrun
+- ✅ `avid-server` detenido / sin auto-restart en el flujo de setup
+- ✅ Root-cause de crashes WSL = host RAM (no guest, no CPU)
+- ✅ **Imagen Lean pull + health + smoke + REPL** (2026-08-23)

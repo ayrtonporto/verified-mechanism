@@ -313,21 +313,17 @@ If exact matching is impossible, report the mismatch explicitly.
 
 ### Phase 0 — Repository understanding
 
-Status: **NEXT**
+Status: **MOSTLY DONE** (env unblocked 2026-08-23; `judge_check.sh` still pending until key + agent/baseline run)
 
 Tasks:
 
-- Read repository documentation.
-- Read `docs/AGENT_API.md`.
-- Read `RULES.md`.
-- Inspect baseline implementation.
-- Inspect all sixteen sample problems.
-- Understand Lean invocation.
-- Understand evaluator/comparator behavior.
-- Run existing baseline.
-- Run `scripts/judge_check.sh`.
+- [x] Read repository documentation / AGENT_API / RULES / baseline.
+- [x] Understand Lean invocation + comparator (smoke green).
+- [x] WSL image pull + health + smoke + REPL path.
+- [ ] Run `scripts/judge_check.sh` (needs key + non-stub agent or baseline flag).
+- [ ] Own baseline runs (kit `outputs/baseline/*` are reference only).
 
-Do not modify architecture before understanding these constraints.
+Do not modify architecture before finishing calibration measurements.
 
 ### Phase 1 — Instrumentation
 
@@ -744,21 +740,46 @@ the free headroom → same crash guaranteed unless host RAM is freed.
 - [x] Install Python 3.11 in WSL — done via `uv` (3.11.16) + `~/.pyshim/python3` shim; system python
       untouched.
 - [x] Clone private repo into WSL native fs — done at `~/verified-mechanism` (token scrubbed).
-- [ ] **Free host RAM** (close Chrome + ChatGPT) before running the kit — the current hard blocker.
-- [ ] Re-run `setup.sh` (image pull + health) in WSL with host RAM freed; keep a `wsl.exe` client
-      attached for the whole pull (detached/`nohup` jobs die when the VM idles).
-- [ ] Run `smoke_test.sh`; expect ~1–2 min (vs 14 on sshrun).
+- [x] Free host RAM (close Chrome) and complete image pull + health — **2026-08-23**.
+- [x] `smoke_test.sh` green with local overrides — **~1 m 48 s**, comparator accepts `p01_linear`.
+- [x] REPL agent path verified — `check_file` accepts `linarith` proof in ~9 s warm.
+- [x] Root-cause Mathlib thrash under kit `--memory 5g`; local override `LEAN_CONTAINER_MEMORY=8g`
+      (patch in `re-takehome-main/src/re_harness/lean.py`, default remains `5g` for judging).
+- [x] WSL `.wslconfig` raised to `memory=10GB` (was 8GB) after pull succeeded with headroom.
+- [ ] Add OpenRouter key to WSL `.env` (not present yet).
+- [ ] Keep Windows tree and WSL clone in sync (WSL clone was still on `86e5ebd` mid-session).
 - [ ] Decide on a cloud VM for the heavy Part-Two experiment matrix.
+
+### 13.9 Measured Lean timings on Ryzen/WSL (2026-08-23)
+
+| Operation | Container RAM | Wall |
+|---|---|---|
+| `import Mathlib` (REPL) | 8g | ~44 s cold |
+| `import Mathlib` / check under 5g | 5g | thrash / timeout (150GB+ blkio) |
+| smoke comparator `p01_linear` | 8g | ~1 m 48 s total |
+| REPL `check_file` warm | 8g | ~9 s |
+
+Image digest unchanged:
+`ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39`.
+
+### 13.10 Decision
+
+- **D011 — Local Lean containers run with `LEAN_CONTAINER_MEMORY=8g` on this laptop.** Required for
+  Mathlib. Do not lower back to 5g for local dev. Judging default stays 5g unless their machines
+  differ; if holdout ever OOMs under 5g that is their environment, not ours to "fix" by shipping
+  a higher default without measurement on their side. Document the override in the writeup if
+  relevant to reproducibility of *our* Part-Two numbers.
 
 ---
 
 ## 14. Current status
 
-**Project stage:** Phase 0 — repository understanding + environment setup (blocked on host RAM).
+**Project stage:** Phase 0 environment **unblocked**. Ready for key + economic calibration + Phase 1.
 
-No collaboration architecture should yet be considered final.
+No collaboration architecture should yet be considered final. `submission/agent.py` is still the stub.
 
 Immediate objective:
 
-> Free host RAM on the Ryzen box (close Chrome + ChatGPT), complete the WSL image pull + `smoke_test.sh`,
-> then establish the solo baselines. `sshrun` is a working-but-slow fallback (~14 min/op).
+> Put the OpenRouter key in WSL `.env`, sync the WSL clone with the Windows tree, run a 1–2 problem
+> economic calibration per model with the shipped baseline, then solo baselines under matched budgets.
+> Always export `LEAN_CONTAINER_MEMORY=8g` for local Lean work on this machine.
