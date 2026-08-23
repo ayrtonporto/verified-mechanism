@@ -668,12 +668,97 @@ These become immediate investigation targets.
 
 ---
 
-## 13. Current status
+## 13. Compute environment & infrastructure (as of 2026-08-23)
 
-**Project stage:** Phase 0 — repository understanding.
+### 13.1 Repository
+
+- Private working repo: `https://github.com/ayrtonporto/verified-mechanism` (**private**).
+- Layout: whole working folder pushed **verbatim**; the pristine kit lives untouched at
+  `re-takehome-main/` (nested), planning docs + brief PDF alongside. Git initialized at the
+  parent level; `core.autocrlf=false` so the kit stays byte-for-byte (LF) and Linux-friendly.
+- No secrets in history: only `.env.example` is tracked; the single `sk-or-v1` string is the
+  example grep in the briefing, not a key.
+- Cloned on `sshrun` at `~/Documentos/verified-mechanism` (remote URL scrubbed of token).
+
+### 13.2 Two machines
+
+| | **Ryzen box** (this Windows laptop) | **sshrun** (always-on Linux) |
+|---|---|---|
+| CPU | AMD Ryzen 7 7730U, 8c/16t, AVX2 (x86-64-v3) | AMD A4-3300 APU, **2011**, 2c, **x86-64-v1** (no SSE4.2/AVX) |
+| RAM | 15 GB (WSL sees 7.8 GB) | 14 GB |
+| Access | interactive; user powers it on/off | Tailscale `usuario@sshrun`, key-auth works, passwordless sudo |
+| Docker | **v29.1.3 already in WSL2 Ubuntu-22.04**, distro on **D:** (`D:\WSL\Ubuntu2204`) | v29.7.1, kit fully set up |
+| Kit status | uv + Python 3.11.16 ✓, repo cloned into `~/verified-mechanism` ✓; **image pull BLOCKED by host-RAM exhaustion** (see 13.6) | `setup.sh` OK, image pulled, health OK, smoke OK |
+
+### 13.3 Key finding — sshrun is compatible but far too slow
+
+- Lean **runs** on the 2011 CPU (health OK, Lean 4.32.0). No SIGILL. Compatibility confirmed.
+- But the no-key smoke test (single trivial problem `p01_linear`) took **14 min 24 s** wall clock
+  (Challenge build 217s, Solution build 151s, + comparator). ~10–15× slower than a modern box.
+- **Confounder risk for Part Two:** the harness enforces a per-problem time cap
+  (`VM_TIME_LIMIT_S`). On slow hardware a problem can hit the cap and **falsely fail**, when it
+  would pass on the graders' faster machines → corrupts the "which condition solves what" matrix.
+- Image is pinned by digest `ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287c…`
+  (Lean v4.32.0, Mathlib `81a5d257`, comparator `07bc4ea4`). Same image graders use → reproducible.
+
+### 13.4 Decisions
+
+- **D007 — Develop and run all scientific (Part Two) experiments on the Ryzen/WSL2 box.** Timing
+  there is representative; sshrun's slowness would bias results via false timeouts. Grading runs on
+  the lab's own hardware, so our dev machine choice does not affect the final score, only validity.
+- **D008 — sshrun reserved (if at all) for timing-insensitive throughput only.** For "always-on +
+  fast + unattended" a cloud VM would be the real answer, not sshrun.
+
+### 13.6 Root cause of the WSL crashes — host RAM exhaustion (definitive, measured)
+
+Repeated attempts to `docker pull` the Lean image in WSL killed the whole VM mid-pull. Ruled out,
+with evidence, several wrong theories before finding the real one:
+
+- **Not the CPU / not compatibility** — Lean 4.32.0 runs fine (health OK on both boxes).
+- **Not `avid-server`** — it was auto-restarting in WSL each boot, but used only **98 MiB**. Stopped
+  it + disabled auto-restart anyway (reversible; image kept).
+- **Not the guest swap / not the `.wslconfig` swap theory** — guest swap is present (8 GB) and never
+  used; the guest never reached its 8 GB cap.
+- **Not the kernel** — standard `6.18.33.2-microsoft-standard-WSL2`, WSL 2.7.11, overlayfs.
+
+**Measured cause (host-side monitor during an active pull):** as the pull inflated `vmmem`
+3.1 → 5.2 GB, **host free RAM collapsed 3.9 GB → <1 GB** and stayed pinned ~1 GB for ~40 s, then
+Windows/Hyper-V **terminated the VM** (ungraceful → lost unflushed guest writes, hence empty logs).
+The guest died because the **host** ran out of RAM, not the guest.
+
+Host RAM budget (15.3 GB total): Chrome ~3.7 GB, Claude Desktop ~2.2 GB, ChatGPT ~1.2 GB, svchost
+~1 GB → ~9.6 GB used, ~5.7 GB free. The kit's `import Mathlib` needs ~6.5 GB, which alone exceeds
+the free headroom → same crash guaranteed unless host RAM is freed.
+
+### 13.7 Decisions (updated)
+
+- **D009 — The Ryzen/WSL blocker is host RAM, fixable by freeing Windows memory.** Closing Chrome
+  (~3.7 GB) + ChatGPT (~1.2 GB) frees ~5 GB → host free ~10–11 GB → WSL can host the ~6.5 GB Mathlib
+  working set without killing the VM. Keep WSL `memory=8GB`; do **not** raise it (host is the ceiling).
+- **D010 — 15 GB total RAM is marginal for Mathlib.** Viable for **development/testing** with heavy
+  apps closed; for **long unattended Part-Two runs** a cloud VM (16–32 GB) remains the robust option.
+  This matches the user's original split (dev here, long runs elsewhere).
+
+### 13.8 Open setup tasks (WSL/Ryzen)
+
+- [x] Install Python 3.11 in WSL — done via `uv` (3.11.16) + `~/.pyshim/python3` shim; system python
+      untouched.
+- [x] Clone private repo into WSL native fs — done at `~/verified-mechanism` (token scrubbed).
+- [ ] **Free host RAM** (close Chrome + ChatGPT) before running the kit — the current hard blocker.
+- [ ] Re-run `setup.sh` (image pull + health) in WSL with host RAM freed; keep a `wsl.exe` client
+      attached for the whole pull (detached/`nohup` jobs die when the VM idles).
+- [ ] Run `smoke_test.sh`; expect ~1–2 min (vs 14 on sshrun).
+- [ ] Decide on a cloud VM for the heavy Part-Two experiment matrix.
+
+---
+
+## 14. Current status
+
+**Project stage:** Phase 0 — repository understanding + environment setup (blocked on host RAM).
 
 No collaboration architecture should yet be considered final.
 
 Immediate objective:
 
-> Understand the execution contract and establish a reproducible baseline before designing the first experiment.
+> Free host RAM on the Ryzen box (close Chrome + ChatGPT), complete the WSL image pull + `smoke_test.sh`,
+> then establish the solo baselines. `sshrun` is a working-but-slow fallback (~14 min/op).
