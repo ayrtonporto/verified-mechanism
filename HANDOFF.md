@@ -2,110 +2,116 @@
 
 ## Read first
 
-1. `PROJECT_STATE.md`
-2. `SETUP_BLOCKERS.md` (WSL ya desbloqueado; overrides locales)
-3. `docs/AGENT_API.md` y `RULES.md` (en `re-takehome-main/`)
-4. Baseline: `baselines/simple_agent.py`
-5. No inventar constraints de ejecución
+1. `PROJECT_STATE.md` (authoritative; includes §13.11 e2e calibration)
+2. `SETUP_BLOCKERS.md` (WSL unblocked; local RAM/timeout overrides)
+3. `re-takehome-main/docs/AGENT_API.md` + `RULES.md`
+4. Baseline: `re-takehome-main/baselines/simple_agent.py`
+5. Do not invent execution constraints
 
 ---
 
 ## Current phase
 
-**Phase 0 casi cerrada → entrar a Phase 1 (instrumentación) / calibración económica.**
+**Phase 0 closed for research start → Phase 1/2 + investigation.**
 
-Entorno WSL operativo. `submission/agent.py` sigue siendo stub.
+Env works. First paid e2e green. `submission/agent.py` still stub.
 
 ---
 
-## What was done this session (2026-08-23)
+## What is true right now (2026-08-24)
 
-### WSL unlock
+### Environment
 
-1. Cerré Chrome en el host (~3 GB) → free RAM host ~11 GB.
-2. Pull de la imagen pinned Lean/Mathlib en WSL nativo (`~/verified-mechanism`).
-3. Health OK: Lean **v4.32.0**, Mathlib `81a5d257`, comparator `07bc4ea4`.
-4. Descubrimiento: el tope **`--memory 5g`** del harness hace thrashing de Mathlib en esta laptop
-   (~150 GB block I/O, timeouts). Con **8g**, `import Mathlib` ~**44 s**.
-5. Parche local mínimo: `LEAN_CONTAINER_MEMORY` env override en
-   `re-takehome-main/src/re_harness/lean.py` (default sigue `5g` para judging).
-6. WSL `.wslconfig`: `memory=10GB` (antes 8GB).
-7. **Smoke OK** (~1 m 48 s): comparator acepta `p01_linear` con `linarith`.
-8. **REPL path OK** (~9 s warm): `accepted=True` vía `LeanClient.check_file`.
+- WSL Ubuntu-22.04, Docker OK, Lean image pinned + health OK.
+- OpenRouter key in **WSL only**: `~/verified-mechanism/re-takehome-main/.env` (gitignored).
+- Local Lean must use **`LEAN_CONTAINER_MEMORY=8g`** (kit default 5g thrashs Mathlib here).
+- Cold comparator: use **`COMPARATOR_TIMEOUT_S=900`** on this laptop.
+- Host: close Chrome before heavy Lean; `.wslconfig` memory=10GB.
+- Two trees: Windows `D:\...\Verified Mechanism` (git source of truth this machine) vs WSL
+  `~/verified-mechanism` (runtime). Sync before dual edits.
 
-### Commands that worked
+### Proven paid run (canonical calibration)
 
-```bash
-# setup (WSL)
-bash ~/verified-mechanism/do_setup.sh
-
-# smoke con overrides locales
-export LEAN_CONTAINER_MEMORY=8g COMPARATOR_TIMEOUT_S=900
-bash ~/verified-mechanism/do_smoke.sh
-
-# REPL agent path
-export LEAN_CONTAINER_MEMORY=8g
-cd ~/verified-mechanism/re-takehome-main
-.venv/bin/python ~/verified-mechanism/repl_smoke.py
+```text
+WSL: ~/verified-mechanism/re-takehome-main/outputs/baseline/20260824T040147Z/
 ```
 
-### Commands / attempts that failed
+| | |
+|---|---|
+| Agent | `baselines.simple_agent:create_agent` |
+| Model | `qwen/qwen3.5-flash-02-23` |
+| Problem | `p01_linear` only (temp set `tmp_p01_only`) |
+| Result | **passed 1/1** (REPL + comparator) |
+| Cost | **$0.00017719** (1 LLM call, 1 turn) |
+| Wall | ~192 s |
+| Script | `run_p01_e2e_clean.sh` |
 
-- Pull con Chrome abierto / host free <~3 GB → VM WSL killed.
-- `smoke_test.sh` con default `5g` + `COMPARATOR_TIMEOUT_S=180` → timeout.
-- Mismo smoke con `900s` pero `5g` → sigue timeout (no es solo time; es RAM del container).
-- Copia WSL del repo desactualizada vs Windows (clon separado en `86e5ebd`).
+### Failure mode that was *not* the repo
 
-### Files changed
+Earlier “almost” runs failed because of **PC/WSL** (5g container thrash, 180s comparator, killed
+`wsl.exe` clients, Windows `$HOME` expansion). Same baseline + problem passes with 8g + 900s +
+one attached script.
 
-- `re-takehome-main/src/re_harness/lean.py` — `LEAN_CONTAINER_MEMORY` override (Windows tree; copiado a WSL).
-- `SETUP_BLOCKERS.md`, este `HANDOFF.md`, `PROJECT_STATE.md`.
-- Helpers locales (no kit): `do_setup.sh`, `do_smoke.sh`, `diag_mathlib_import.sh`, `repl_smoke.py`.
+### Kit touch (local only — remember before submit)
 
----
-
-## Current project thesis
-
-Coordinación Qwen + GPT-OSS para maximizar pruebas Lean aceptadas, y caracterizar cuándo
-la colaboración aporta respecto de cada modelo solo. Lean feedback = señal de coordinación.
-
-Arquitectura prioritaria aún: **Candidate A** (propose → Lean → diagnose/repair).
-Blackboard = hipótesis, no implementar todavía.
+- `re-takehome-main/src/re_harness/lean.py`: optional `LEAN_CONTAINER_MEMORY` (default still `5g`).
+- Not an architecture decision. Revisit before grading submit (D011/D013 in PROJECT_STATE).
 
 ---
 
-## Immediate next actions (in order)
+## Runtime recipe (copy every time)
 
-1. **Pegar OpenRouter key** en WSL:  
-   `cp ~/verified-mechanism/re-takehome-main/.env.example ~/verified-mechanism/re-takehome-main/.env`
-2. **Sincronizar** copia WSL con Windows (commit en Windows + pull en WSL, o copiar archivos).
-3. Calibración económica: 1–2 problemas × cada modelo con baseline (`BASELINE_MODEL=...`).
-4. `judge_check.sh` cuando haya un agent mínimo (aunque sea el baseline vía `--agent`).
-5. Phase 1: instrumentación de experimentos si el harness no alcanza para Part Two.
-6. Solos propios (no confiar ciegamente en `outputs/baseline/*` del kit: corridos con ~1080s cap).
+```bash
+export PATH="$HOME/.pyshim:$HOME/.local/bin:$PATH"
+export LEAN_CONTAINER_MEMORY=8g
+export COMPARATOR_TIMEOUT_S=900
+cd ~/verified-mechanism/re-takehome-main
+```
+
+One-problem e2e helper (already used successfully):
+
+```bash
+bash /home/ayrton/verified-mechanism/run_p01_e2e_clean.sh
+# or from Windows:
+# wsl.exe -d Ubuntu-22.04 -- bash /home/ayrton/verified-mechanism/run_p01_e2e_clean.sh
+```
+
+Note: `run.py --problems` needs a **set directory** with `manifest.json`, not `sample-problems/p01_linear`.
+
+---
+
+## Immediate next actions (investigation chat)
+
+1. Twin calibration: **GPT-OSS** on `p01_linear` same recipe (cost/latency baseline).
+2. Optional: one mid/hard problem single-model probe before full 16.
+3. Phase 1 instrumentation if harness outputs are not enough for Part Two tables.
+4. Phase 2 solo baselines (Qwen / GPT-OSS) under matched budgets.
+5. Then minimal collaboration (Candidate A: propose → Lean → other model repairs).
+6. Do **not** start blackboard / multi-agent frameworks yet.
+7. No push without explicit user OK. No large matrices without a spend plan.
 
 ---
 
 ## Do not do yet
 
-- Multi-agent framework complejo / blackboard
-- Optimizar prompts sin mediciones
-- Cambiar interfaces evaluator-facing sin necesidad
-- Matrices grandes sin key + logging fiable
-- Asumir roles fijos Qwen vs GPT-OSS
+- Complex multi-agent / blackboard as first design
+- Prompt spam without measurements
+- Full 16-problem runs without budget plan
+- Silent kit interface changes
+- Pasting API keys into chat
 
 ---
 
-## Runtime contract (short)
+## Thesis (unchanged)
 
-- Implement `submission/agent.py`: `async solve(problem, services) -> AgentResult`
-- `services.llm.complete(model in {qwen/qwen3.5-flash-02-23, openai/gpt-oss-120b}, ...)`
-- `services.lean.check_file(full_source)` — feedback; grading final = comparator fresco
-- `services.checkpoint(source, meta)`
-- Caps: `$1` / problem, `28800s` wall (defaults). Local: `LEAN_CONTAINER_MEMORY=8g`.
+Coordination layer so fixed Qwen + GPT-OSS produce Lean-accepted proofs; measure when
+collaboration beats either solo. Lean compiler feedback is a coordination signal to test.
+
+Primary candidate still: **propose → verify → diagnose/repair → verify**.
 
 ---
 
 ## Next action
 
-**Obtener la OpenRouter key en `.env` (WSL) y correr calibración económica de 1 problema por modelo con el baseline.**
+**Start investigation: GPT-OSS p01 calibration twin, then solo/collaboration design from data.**
+Read PROJECT_STATE §13.11–14 first.

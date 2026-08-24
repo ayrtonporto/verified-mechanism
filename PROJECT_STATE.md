@@ -313,17 +313,19 @@ If exact matching is impossible, report the mismatch explicitly.
 
 ### Phase 0 — Repository understanding
 
-Status: **MOSTLY DONE** (env unblocked 2026-08-23; `judge_check.sh` still pending until key + agent/baseline run)
+Status: **DONE enough to leave** (2026-08-24). Env + first paid e2e calibration green.
 
 Tasks:
 
 - [x] Read repository documentation / AGENT_API / RULES / baseline.
 - [x] Understand Lean invocation + comparator (smoke green).
 - [x] WSL image pull + health + smoke + REPL path.
-- [ ] Run `scripts/judge_check.sh` (needs key + non-stub agent or baseline flag).
-- [ ] Own baseline runs (kit `outputs/baseline/*` are reference only).
+- [x] OpenRouter key in WSL `.env` (gitignored; harness loads it).
+- [x] First own paid e2e: Qwen baseline on `p01_linear` → **passed** (see §13.11).
+- [ ] Run `scripts/judge_check.sh` (still pending; not blocking research start).
+- [ ] Own full solo baselines on all 16 (Phase 2).
 
-Do not modify architecture before finishing calibration measurements.
+Do not modify architecture before finishing broader calibration / solo baselines.
 
 ### Phase 1 — Instrumentation
 
@@ -746,11 +748,12 @@ the free headroom → same crash guaranteed unless host RAM is freed.
 - [x] Root-cause Mathlib thrash under kit `--memory 5g`; local override `LEAN_CONTAINER_MEMORY=8g`
       (patch in `re-takehome-main/src/re_harness/lean.py`, default remains `5g` for judging).
 - [x] WSL `.wslconfig` raised to `memory=10GB` (was 8GB) after pull succeeded with headroom.
-- [ ] Add OpenRouter key to WSL `.env` (not present yet).
-- [ ] Keep Windows tree and WSL clone in sync (WSL clone was still on `86e5ebd` mid-session).
+- [x] OpenRouter key in WSL `.env` only (`~/verified-mechanism/re-takehome-main/.env`, gitignored).
+- [x] First paid e2e calibration (Qwen × p01) — **passed** 2026-08-24 (see §13.11).
+- [ ] Keep Windows tree and WSL clone in sync before large coding sessions.
 - [ ] Decide on a cloud VM for the heavy Part-Two experiment matrix.
 
-### 13.9 Measured Lean timings on Ryzen/WSL (2026-08-23)
+### 13.9 Measured Lean timings on Ryzen/WSL (2026-08-23/24)
 
 | Operation | Container RAM | Wall |
 |---|---|---|
@@ -758,28 +761,84 @@ the free headroom → same crash guaranteed unless host RAM is freed.
 | `import Mathlib` / check under 5g | 5g | thrash / timeout (150GB+ blkio) |
 | smoke comparator `p01_linear` | 8g | ~1 m 48 s total |
 | REPL `check_file` warm | 8g | ~9 s |
+| **Paid e2e** Qwen baseline `p01_linear` | 8g | **~192 s** total (~101 s comparator) |
 
 Image digest unchanged:
 `ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39`.
 
-### 13.10 Decision
+### 13.10 Decisions
 
 - **D011 — Local Lean containers run with `LEAN_CONTAINER_MEMORY=8g` on this laptop.** Required for
-  Mathlib. Do not lower back to 5g for local dev. Judging default stays 5g unless their machines
-  differ; if holdout ever OOMs under 5g that is their environment, not ours to "fix" by shipping
-  a higher default without measurement on their side. Document the override in the writeup if
-  relevant to reproducibility of *our* Part-Two numbers.
+  Mathlib. Do not lower back to 5g for local dev. Judging default stays 5g. Document in writeup if
+  relevant to reproducibility of *our* Part-Two numbers. **Before submit:** either keep the env-only
+  override (preferred; default remains 5g) or revert the `lean.py` patch and document the local
+  recipe only — kit must not silently change judge defaults.
+- **D012 — Failures under 5g/180s on this laptop are environment, not problem/repo bugs.** Confirmed
+  by e2e green under 8g + 900s comparator timeout with the same baseline and problem.
+- **D013 — CLI `--problems` takes a problem-*set* directory (with `manifest.json`), not a single
+  problem folder.** For one-problem runs use a temp set (see `run_p01_e2e_clean.sh`).
+
+### 13.11 First paid e2e calibration (2026-08-24)
+
+Canonical successful run (WSL):
+
+```text
+~/verified-mechanism/re-takehome-main/outputs/baseline/20260824T040147Z/
+```
+
+| Field | Value |
+|---|---|
+| Condition | baseline `simple_agent`, **Qwen only** |
+| Problem set | temp 1-problem set `tmp_p01_only` (`p01_linear`) |
+| Result | **passed** `1/1`, comparator.passed=true, timed_out=false |
+| Cost | **$0.00017719** (1 LLM call) |
+| Wall | **~192 s** (comparator ~101 s) |
+| Turns | 1 / max 3; `accepted_by_repl=true` |
+| Caps | `VM_BUDGET_USD=1.00`, `VM_TIME_LIMIT_S=1200`, `COMPARATOR_TIMEOUT_S=900`, `LEAN_CONTAINER_MEMORY=8g` |
+| Script | `run_p01_e2e_clean.sh` (local helper; not submission surface) |
+
+**Implication for budget planning:** easy problems are sub-millidollar with Qwen+few turns. A full
+16-problem solo is still unknown (harder problems + more turns dominate). Next calibration: same
+recipe with **GPT-OSS** on p01, then a mid/hard problem, before full solos.
+
+**Earlier incomplete paid attempt** (`20260823T231035Z`): LLM+REPL succeeded (~$0.00023) but
+comparator/packaging did not finish cleanly (WSL client cuts / 180s rescores). Prefer the
+`20260824T040147Z` run as the calibration reference.
+
+### 13.12 Local-only kit note (remember before submit)
+
+Touched under `re-takehome-main/` for local dev only:
+
+- `src/re_harness/lean.py` — reads `LEAN_CONTAINER_MEMORY` (default **still `5g`**).
+
+Do **not** treat this as an architecture change. Before final GitHub submit for grading: confirm
+whether to ship the env hook (safe if default unchanged) or restore pristine kit bytes and keep
+overrides only in run docs/scripts outside the graded path.
+
+Helpers outside the kit contract (Windows tree and/or WSL home): `do_setup.sh`, `do_smoke.sh`,
+`run_p01_e2e_clean.sh`, `repl_smoke.py`, `diag_mathlib_import.sh`, `check_status.py`, etc.
 
 ---
 
 ## 14. Current status
 
-**Project stage:** Phase 0 environment **unblocked**. Ready for key + economic calibration + Phase 1.
+**Project stage:** Phase 0 **closed for research start**. First economic calibration point recorded.
+Next work = investigation / Phase 1–2 (instrumentation + solo baselines + collaboration design).
 
-No collaboration architecture should yet be considered final. `submission/agent.py` is still the stub.
+No collaboration architecture is final. `submission/agent.py` is still the stub.
 
-Immediate objective:
+**Runtime recipe (every local Lean/model run on this laptop):**
 
-> Put the OpenRouter key in WSL `.env`, sync the WSL clone with the Windows tree, run a 1–2 problem
-> economic calibration per model with the shipped baseline, then solo baselines under matched budgets.
-> Always export `LEAN_CONTAINER_MEMORY=8g` for local Lean work on this machine.
+```bash
+export PATH="$HOME/.pyshim:$HOME/.local/bin:$PATH"
+export LEAN_CONTAINER_MEMORY=8g
+export COMPARATOR_TIMEOUT_S=900   # cold comparator; lower only when warm/proven
+# Chrome closed; host free RAM comfortably >~8–10 GB recommended
+cd ~/verified-mechanism/re-takehome-main
+```
+
+Immediate objective for the next session:
+
+> Start scientific/engineering investigation: GPT-OSS p01 calibration twin, then solo baselines /
+> minimal collaboration design. Keep spends bounded. Sync WSL clone with Windows tree before
+> editing code in both places. Always use the runtime recipe above.
