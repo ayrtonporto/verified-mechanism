@@ -871,7 +871,8 @@ Helpers outside the kit contract (Windows tree and/or WSL home): `do_setup.sh`, 
 ## 14. Current status
 
 **Project stage:** Phase 0–1 **done** (2026-08-25). Coordination plan frozen. Science arms
-invokable. Twin calib green. **Next = Windows runtime smoke → freeze split → S_dev solos.**
+invokable. Twin calib green. **RUNTIME RESOLVED (2026-08-25): run on `sshrun` via SSH+tmux — see §17.**
+**Next = freeze split → S_dev solos on `sshrun`.**
 
 - Detail plan: `design/COORDINATION_PLAN.md`
 - Builder brief (executed): `design/BUILDER_BRIEF.md`
@@ -893,13 +894,14 @@ cd ~/verified-mechanism/re-takehome-main
 # Keep session attached for full job wall time
 ```
 
-**Runtime recipe — Windows native (target; smoke pending):** see `WINDOWS_RUNTIME.md`.
+**Runtime recipe — PRODUCTION is now `sshrun` via SSH+tmux (see §17).** WSL/Windows-native
+recipes below/above are superseded (WSL session-kill; Desktop engine crash on Lean image).
 
 Immediate objective for the next session:
 
-> 1) Prove Windows Docker Desktop path with one p01 calib.  
-> 2) Freeze `S_dev`/`S_eval`.  
-> 3) Run S-Q/S-G on S_dev under spend OK; then R then H.  
+> 1) Freeze `S_dev`/`S_eval` (SPLIT.md still unset).  
+> 2) Run S-Q and S-G on S_dev **on `sshrun`, in tmux, one arm at a time**; log to REGISTRY; then R then H.  
+> 3) `git pull` on sshrun first to sync any new arm scripts; adapt arm scripts to sshrun paths (§17).  
 > No blackboard/debate. No large matrix without SPEND_PLAN + OK.
 
 ---
@@ -953,3 +955,84 @@ See **`WINDOWS_RUNTIME.md`**. Minimum proof: Docker Desktop up, Windows venv, `.
 | Logged calib (Q+G p01) | ~0.00025 |
 | Phase 0–1 soft cap | ≤0.05 (met) |
 | Reserve final/writeup | 20–30% untouched |
+
+---
+
+## 17. RUNTIME RESOLVED — `sshrun` via SSH + tmux (2026-08-25)
+
+**Supersedes the WSL-fallback / Windows-native hunt (D016, §13–16).** This is where all paid Lean
+runs happen from now on.
+
+### 17.1 Where and why
+
+**Where:** the always-on Linux box **`sshrun`**, over SSH, with every long job launched **inside `tmux`**.
+
+**Why (measured):**
+
+- **WSL is out — session-kill (the real "WSL se muere a mitad" bug).** When an agent/tool launches a
+  WSL job, the WSL VM tears down as soon as the launching `wsl.exe` client disconnects → the job dies
+  mid-run **with free RAM (not OOM)**. Reproduced repeatedly; `nohup`/`setsid`/a persistent anchor
+  client did **not** save it. Symptoms: exit 127 / `0x80072746`, empty logs (ungraceful kill),
+  missing `summary.json`.
+- **Windows-native Docker Desktop is out** — engine crashes loading the large Lean image on this
+  15 GB laptop (§ Runtime truth).
+- **`sshrun` over SSH + tmux works** — jobs **survive client disconnect**. Proven: a 28-min smoke and
+  a full paid p01 both ran to completion while the SSH client came and went. This is the reliable path.
+- **`sshrun` is slow (AMD A4-3300, 2011, 2 cores) but that is fine:** the 8 h/problem cap is ~100×
+  the ~5-min p01 wall, so slowness does **not** cause false timeouts → the science stays valid. It
+  only costs throughput (matrix = one overnight unattended tmux run, not days). No cloud (no budget).
+
+### 17.2 `sshrun` facts (for a fresh session)
+
+- Access: `ssh usuario@sshrun` (Tailscale; key auth works; passwordless sudo).
+- Repo: `~/Documentos/verified-mechanism` (git; `git pull` needs a token — use `gh auth token` on the
+  Windows side and pull `https://x-access-token:<TOKEN>@github.com/ayrtonporto/verified-mechanism.git`).
+- Kit: `~/Documentos/verified-mechanism/re-takehome-main`; `.venv` OK; **system python 3.12** (no
+  pyshim needed, unlike WSL).
+- Image: `ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287c…` pulled; `health` OK.
+- `.env` present (key copied from WSL, len 73, `sk-or-`), `N_WORKERS=1`, `VM_BUDGET_USD=1.00`,
+  `VM_TIME_LIMIT_S=28800`.
+- `tmux` 3.4 installed.
+- **Disk was the trap:** btrfs + hidden **Timeshift snapshots** ate ~30 GB invisible to `du`. Deleted
+  the 2 old snapshots (`timeshift --delete`) → ~35 GB free; kept today's. avid/babelbench images
+  untouched (protected). Watch disk before big pulls.
+
+### 17.3 Validated run — p01 Qwen baseline (2026-08-25)
+
+`passed 1/1`, `actual_cost_usd 0.00017459`, wall **~4.7 min** (comparator ~2.6 min), 1 turn, 1 LLM
+call. Artifacts: `re-takehome-main/outputs/baseline/<timestamp>/`.
+
+### 17.4 Production run pattern
+
+```bash
+# Adapt an arm/run script from WSL paths to sshrun paths (once):
+#   /home/ayrton/verified-mechanism      -> /home/usuario/Documentos/verified-mechanism
+#   drop the "/home/ayrton/.pyshim:/home/ayrton/.local/bin:" PATH prefix (sshrun has py3.12)
+ssh usuario@sshrun 'cd ~/Documentos/verified-mechanism && \
+  sed -e "s#/home/ayrton/verified-mechanism#/home/usuario/Documentos/verified-mechanism#g" \
+      -e "s#/home/ayrton/\.pyshim:/home/ayrton/\.local/bin:##g" \
+      run_p01_e2e_clean.sh > run_p01_sshrun.sh'
+
+# Launch inside tmux so it survives disconnect; poll the log for a DONE marker:
+ssh usuario@sshrun 'cd ~/Documentos/verified-mechanism && \
+  tmux new-session -d -s p01 "PYTHONUNBUFFERED=1 bash run_p01_sshrun.sh; echo DONE_\$? >> run_p01_e2e_clean.log"'
+```
+
+Env recipe (already in the arm scripts): `LEAN_CONTAINER_MEMORY=8g`, `COMPARATOR_TIMEOUT_S=900`,
+`LEAN_CHECK_TIMEOUT_S=300`, `N_WORKERS=1`. Arm scripts live at repo root
+(`run_p01_e2e_clean.sh` = S-Q baseline; `run_p01_sg_calib.sh` = S-G via
+`experiments_agents.s_g:create_agent`); adapt each the same way.
+
+### 17.5 Decisions
+
+- **D018 — Production runtime = `sshrun` over SSH + tmux.** Supersedes **D016** (Windows-native). WSL
+  abandoned for runs (session-kill); kept only for local edits. Desktop rejected (engine crash). No cloud.
+- **D019 — `sshrun` slowness is acceptable** (8 h cap ≫ ~5-min p01 → no false timeouts). Matrix runs as
+  an overnight unattended tmux job, one arm at a time.
+
+### 17.6 Next action (a fresh chat starts here)
+
+1. `git pull` on `sshrun` to sync latest arm scripts.
+2. Freeze `S_dev`/`S_eval` (`experiments/SPLIT.md` still unset).
+3. Adapt + run **S-Q** and **S-G** on `S_dev` on `sshrun`, in tmux, one arm at a time; log rows in
+   `experiments/REGISTRY.md`. Then **R**, then **H**. Respect `SPEND_PLAN.md`; no full matrix without OK.

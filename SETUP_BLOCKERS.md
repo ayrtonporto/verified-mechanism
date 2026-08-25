@@ -1,12 +1,16 @@
 # Setup blockers — qué arreglar para empezar
 
+> ⚠️ **SUPERSEDED (2026-08-25):** the production runtime moved from WSL to **`sshrun` via SSH + tmux**
+> because WSL is unreliable for agent-driven runs (**session-kill**, not OOM). See `PROJECT_STATE.md`
+> §17 and `HANDOFF.md`. The WSL memory recipe below is still valid *if* WSL is ever used, but paid runs
+> now go on `sshrun`. p01 validated there: pass, $0.00017, ~4.7 min.
+
 Estado al **2026-08-25**. Objetivo: entorno rápido y estable para el agente y
 experimentos. El kit `re-takehome-main/` se toca solo con overrides locales documentados.
 
-**WSL desbloqueado y calibrado (Qwen + GPT-OSS p01).**  
-**Runtime pivot:** prefer **Windows nativo** when Docker Desktop can live on **D:**.  
-Today: Desktop **blocked by low C: free space** (~3.2 GB; installer wants ~3.5 GB even with install-dir on D:).  
-Hybrid Windows-Python + WSL-docker TCP **not green** for Lean REPL. **WSL attached = production path.**
+**Production path (historical, WSL): WSL Ubuntu dockerd** (not Docker Desktop for Lean).  
+Memory recipe: `WSL_LEAN_MEMORY.md` + `wsl_lean_env.sh`.  
+`.wslconfig`: 10 GB WSL, **no** `autoMemoryReclaim` during Lean runs.
 
 ---
 
@@ -30,60 +34,52 @@ ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed
 
 ---
 
-## Hallazgo crítico — el tope de 5 GB del container no alcanza en esta laptop
+## Por qué pide tanta RAM (vs tu Lean “normal”)
 
-El harness fija `--memory 5g` en cada container Lean/Comparator
-(`src/re_harness/lean.py::_hardened_docker_args`).
+Este kit **no** es un `lake build` nativo caliente. Hace:
 
-Medido:
+1. Container Docker **fresco** con **Mathlib completo** (`import Mathlib` cold).  
+2. Luego otro container **Comparator** que vuelve a buildear Challenge + Solution.
 
-| Container memory | `import Mathlib` / smoke |
-|---|---|
-| **5g** (default kit) | thrashing (~150–160 GB block I/O), timeout |
-| **8g** (override local) | `import Mathlib` **~44 s**; smoke **~1 m 48 s**; REPL warm **~9 s** |
+Por eso 5g thrashs y 8g funciona aquí. Detalle: **`WSL_LEAN_MEMORY.md`**.
 
-Override local (no cambia el default de judging):
-
-```bash
-export LEAN_CONTAINER_MEMORY=8g
-# PowerShell: $env:LEAN_CONTAINER_MEMORY="8g"
-```
-
-Parche mínimo en el kit: lee `LEAN_CONTAINER_MEMORY` con default `5g`.
-
-También hace falta **RAM de host libre** (cerrar Chrome) para Mathlib ~6.5 GB.
+| Knob | Valor |
+|------|--------|
+| WSL `.wslconfig` memory | **10GB** |
+| `autoMemoryReclaim` | **OFF** en runs (antes gradual podía achicar mid-job) |
+| `LEAN_CONTAINER_MEMORY` | **8g** (default kit 5g = malo aquí) |
+| Workers Lean | **1** |
+| Host | Cerrar Chrome pesado + Docker Desktop durante runs |
 
 ---
 
-## Hallazgo 2026-08-25 — WSL session kills no es OOM
+## Hallazgo — session kill ≠ OOM
 
-Intentos fallidos de S-G: LLM OK, luego proceso muerto (exit 127) con **~7–8 GB free**.
-Causa: ciclo de vida de sesión WSL / quoting desde el launcher, no thrash Mathlib.
-Mitigación operativa WSL: `wsl.exe -d Ubuntu-22.04 -- bash /ruta/script.sh` foreground largo.
-Mitigación estratégica: **Windows native runtime** (`WINDOWS_RUNTIME.md`).
+Intentos fallidos con mucha RAM libre y exit 127: el cliente WSL se cortó, no Mathlib.  
+Mitigación: `wsl.exe -d Ubuntu-22.04 -- bash /ruta/script.sh` **attached** todo el wall time.
 
 ---
 
-## Cómo arrancar un run
-
-### Preferido — Windows (cuando smoke esté verde)
-
-Ver **`WINDOWS_RUNTIME.md`**.
-
-### Fallback — WSL
+## Cómo arrancar un run (WSL — producción)
 
 ```bash
-# 1) Windows: cerrar Chrome
-wsl -d Ubuntu-22.04
-export PATH="$HOME/.pyshim:$HOME/.local/bin:$PATH"
-export LEAN_CONTAINER_MEMORY=8g
-export COMPARATOR_TIMEOUT_S=900
-export PYTHONPATH="$HOME/verified-mechanism/re-takehome-main${PYTHONPATH:+:$PYTHONPATH}"
-cd ~/verified-mechanism/re-takehome-main
-# mantener sesión attached todo el wall time
+# Windows: Chrome liviano/cerrado; Docker Desktop cerrado
+# Si tocaste .wslconfig: ya se aplicó con wsl --shutdown
+
+wsl.exe -d Ubuntu-22.04 -- bash -lc '
+  source ~/verified-mechanism/wsl_lean_env.sh
+  cd ~/verified-mechanism/re-takehome-main
+'
+
+# Calib GPT-OSS p01:
+wsl.exe -d Ubuntu-22.04 -- bash /home/ayrton/verified-mechanism/run_p01_sg_calib.sh
 ```
 
-Helpers: `run_p01_e2e_clean.sh`, `run_p01_sg_calib.sh`, etc.
+Helpers: `run_p01_e2e_clean.sh`, `run_p01_sg_calib.sh`, `wsl_lean_env.sh`.
+
+### Docker Desktop (opcional, no Lean)
+
+Puede estar en `D:\Docker\DockerDesktop`. **No** usarlo para la imagen Lean en esta laptop. Ver `WINDOWS_RUNTIME.md`.
 
 ---
 
@@ -97,34 +93,34 @@ Trabajos largos: cliente `wsl.exe` **attached**. Detached/`nohup` mueren cuando 
 
 | Copia | Path | Uso |
 |---|---|---|
-| Windows (git SoT + target runtime) | `D:\Mis documentos\Documentos\Verified Mechanism` | commits, prefer runs nativos |
-| WSL nativo (fallback runtime) | `~/verified-mechanism` | docker/Lean si Windows no está listo |
+| Windows (git SoT) | `D:\Mis documentos\Documentos\Verified Mechanism` | commits |
+| WSL (runtime Lean) | `~/verified-mechanism` | docker/Lean runs |
 
-Sync: `git pull` en WSL tras push, o copiar paths puntuales.
+Sync: `git pull` en WSL tras push, o copiar paths.
 
-### `.env` / OpenRouter key
+### `.env`
 
-Key en **gitignored** `.env` junto al kit. Históricamente WSL.
-Para Windows: copiar a `re-takehome-main/.env` sin commitear ni pegar en chat.
+Solo en kit gitignored (WSL y/o Windows). Nunca commit / chat.
 
 ### sshrun
 
-Fallback lento (~14 min/op). No usar para Part Two (sesga timeouts).
+Lento; no Part Two.
 
 ---
 
 ## Pendiente
 
-- [ ] Liberar **≥4 GB en C:** (o TEMP en D: + checks del installer) e instalar Docker Desktop en **`D:\Docker\...`** — hoy C: ~3.2 GB free bloquea.
-- [ ] Re-smoke Windows Lean **sin** TCP socat (Desktop engine).
-- [ ] Freeze `S_dev` / `S_eval`.
-- [ ] Mientras tanto: corridas científicas en **WSL attached** (ya verde).
+- [ ] Freeze `S_dev` / `S_eval`
+- [ ] Batches S-Q / S-G en S_dev (WSL, un arm a la vez)
+- [ ] Windows Lean nativo: aparcado (Desktop inestable con Mathlib aquí)
 
 ---
 
 ## Ya resueltos (históricos)
 
-- Docker en WSL, imagen Lean, smoke, REPL
-- Root-cause crashes pull = host RAM (histórico); session-kill = otro bug (2026-08-25)
-- OpenRouter key + calibs Qwen/GPT-OSS p01
-- Science arms S/R/H + experiment registry
+- Docker WSL + imagen Lean + smoke + REPL  
+- 5g thrash → 8g override  
+- Session-kill vs OOM diferenciados  
+- Calibs Qwen/GPT-OSS p01  
+- Science arms S/R/H + registry  
+- `.wslconfig` sin reclaim agresivo  
