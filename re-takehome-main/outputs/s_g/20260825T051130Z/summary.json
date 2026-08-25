@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "set": "tmp_p01_only",
+  "problems": [
+    {
+      "problem_id": "p01_linear",
+      "status": "harness_error",
+      "passed": false,
+      "points": 0,
+      "actual_cost_usd": 9e-05,
+      "wall_s": 220.797,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": "[WinError 10038] Se intentó realizar una operación en un elemento que no es un socket"
+    }
+  ],
+  "total_points": 0,
+  "max_points": 1,
+  "actual_cost_usd": 9e-05,
+  "wall_s_sum": 220.797,
+  "run_id": "5e552886f2b04e7b949fa02fc6a75224",
+  "wall_s": 221.766,
+  "finished_at": "2026-08-25T05:15:12.602777+00:00"
+}

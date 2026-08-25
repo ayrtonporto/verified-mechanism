@@ -773,7 +773,7 @@ the free headroom → same crash guaranteed unless host RAM is freed.
 - [x] First paid e2e calibration (Qwen × p01) — **passed** 2026-08-24 (see §13.11).
 - [x] Phase 0–1 science layer — **done** 2026-08-25 (see §16).
 - [x] Twin calib GPT-OSS S-G × p01 — **passed** 2026-08-25 (see §13.11b).
-- [ ] **Windows native runtime smoke** (Docker Desktop + kit on Windows) — decided; not yet proven (§16.3).
+- [ ] **Windows native Lean path green** — toolchains on D: ready; Docker Desktop blocked by C: free space; hybrid TCP docker not green for REPL (see `WINDOWS_RUNTIME.md`).
 - [ ] Keep Windows tree and WSL clone in sync when dual-editing (less critical once Windows runtime is green).
 - [ ] Decide on a cloud VM for the heavy Part-Two experiment matrix (optional if Windows native is stable).
 

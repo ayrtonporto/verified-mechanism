@@ -1,146 +1,122 @@
-# Windows native runtime (target)
+# Windows native runtime
 
-**Status:** decided 2026-08-25 — **smoke not yet proven** on this box.  
-**Why:** WSL paid runs work, but Hermes/tool-launched WSL sessions often **kill mid-Lean** (exit 127 / incomplete `result.json`). That cost hours; it was **not** host OOM on the failed S-G attempts (free RAM was high). Native Windows + Docker Desktop should keep one long-lived process tree.
-
-WSL remains a **fallback** with a known-good recipe.
+**Status (2026-08-25):** **partial** — Windows Python + D: toolchains work; **Lean/Docker long jobs not green yet** via Windows `docker.exe`.  
+**Hard rule:** install toolchains on **D:** only (user constraint).
 
 ---
 
-## Goal
+## What is on D: now
 
-Run the same harness on Windows:
+| Component | Path | Status |
+|-----------|------|--------|
+| Repo / kit | `D:\Mis documentos\Documentos\Verified Mechanism\` | SoT |
+| Python 3.11 (uv) | `D:\Python\uv-python\`, cache `D:\Python\uv-cache\` | OK |
+| Kit venv | `re-takehome-main\.venv\` (on D:) | OK; `pip install -e ".[dev]"` done |
+| `.env` | `re-takehome-main\.env` (gitignored) | OK (copied from WSL) |
+| Docker CLI | `D:\Docker\bin\docker.exe` | OK |
+| Docker engine | **WSL** Ubuntu-22.04 (distro/data on **D:\WSL**) | OK; image Lean present |
+| Docker Desktop | **not installed** | blocked — see below |
+| TCP bridge | WSL `socat :2375` → `/var/run/docker.sock` | fragile for long REPL |
+
+---
+
+## Docker Desktop blocker (C: space, not “refused D:”)
+
+Installer log:
 
 ```text
-OpenRouter + Docker Lean image + run.py + experiments_agents
+not enough disk space to install: need 3459 MiB, only ~3230 MiB available
 ```
 
-without going through `wsl.exe` for the long job.
+That check is against **C:** free space even when `--installation-dir=D:\Docker\DockerDesktop`.  
+**D:** has ~95 GB free.** C:** is the bottleneck (~3.2 GB free).
 
----
+No Docker Desktop bits were left installed on C: (empty dirs only).  
+Installer binary kept on `D:\Docker\DockerDesktopInstaller.exe`.
 
-## Prerequisites
-
-1. **Docker Desktop** running (Linux containers), enough RAM; close Chrome for Mathlib.
-2. **Python 3.11** on Windows (`py -3.11` or `python`).
-3. Repo SoT: `D:\Mis documentos\Documentos\Verified Mechanism\re-takehome-main`
-4. **`.env`** in kit root (gitignored) with `OPENROUTER_API_KEY=...`  
-   - Copy from WSL if needed:  
-     `wsl.exe -d Ubuntu-22.04 -- cat ~/verified-mechanism/re-takehome-main/.env`  
-     → paste into Windows kit `.env` (do not commit, do not chat the key).
-5. Image already used in WSL (same digest):  
-   `ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39`
-
----
-
-## One-time setup (PowerShell)
+**To finish Desktop later:** free ≥4 GB on **C:** (or move user TEMP to D: *and* satisfy installer checks), then:
 
 ```powershell
-cd "D:\Mis documentos\Documentos\Verified Mechanism\re-takehome-main"
-
-# venv
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -U pip
-pip install -e ".[dev]"
-
-# .env (create manually; never commit)
-# OPENROUTER_API_KEY=sk-or-...
-
-# optional: pull image if missing
-docker pull ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39
+# still prefer D: install dir
+D:\Docker\DockerDesktopInstaller.exe install --quiet --accept-license `
+  --installation-dir="D:\Docker\DockerDesktop" `
+  --wsl-default-data-root="D:\Docker\data"
 ```
 
-If `scripts/setup.sh` is bash-only, either run the equivalent steps above or:
-
-```powershell
-wsl.exe -d Ubuntu-22.04 -- bash -lc 'cd /mnt/d/Mis\ documentos/Documentos/Verified\ Mechanism/re-takehome-main && bash scripts/setup.sh'
-```
-
-…but prefer a **Windows venv** for native `run.py`.
+Until then: **do not** force Desktop onto C:.
 
 ---
 
-## Every paid / Lean run (PowerShell)
+## Working stack today (hybrid, D:-centric)
 
-```powershell
-cd "D:\Mis documentos\Documentos\Verified Mechanism\re-takehome-main"
-$env:LEAN_CONTAINER_MEMORY = "8g"
-$env:COMPARATOR_TIMEOUT_S = "900"
-$env:LEAN_CHECK_TIMEOUT_S = "300"
-$env:PYTHONPATH = (Get-Location).Path
-# optional pilot:
-# $env:BASELINE_MAX_TURNS = "3"
-
-.\.venv\Scripts\python.exe run.py `
-  --problems <set_with_manifest> `
-  --out outputs `
-  --agent experiments_agents.s_g:create_agent
+```text
+Windows Python 3.11 (D:\…\re-takehome-main\.venv)
+  → docker.exe (D:\Docker\bin)
+  → DOCKER_HOST=tcp://<WSL_IP>:2375
+  → socat in WSL
+  → dockerd in WSL (data under D:\WSL)
 ```
 
-**Must:** `--problems` is a **set** directory with `manifest.json`.
-
-### Temp 1-problem set (p01)
-
-```powershell
-$tmp = "D:\Mis documentos\Documentos\Verified Mechanism\tmp-p01-set"
-Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "$tmp\p01_linear" | Out-Null
-Copy-Item sample-problems\p01_linear\problem.md, sample-problems\p01_linear\challenge.lean "$tmp\p01_linear\"
-@'
-{
-  "schema_version": 1,
-  "set": "tmp_p01_only",
-  "problems": [
-    {
-      "id": "p01_linear",
-      "theorem_names": ["p01_linear"],
-      "definition_names": [],
-      "numeric_answer_names": []
-    }
-  ]
-}
-'@ | Set-Content -Encoding utf8 "$tmp\manifest.json"
-```
-
-Then run with `--problems $tmp`.
-
----
-
-## Smoke checklist (prove native path)
-
-| Step | Pass criteria |
-|------|----------------|
-| `docker version` | engine running |
-| `python -c "from re_harness.config import HarnessSettings; ..."` | key loaded, budget 1.0 |
-| `LEAN_CONTAINER_MEMORY` seen as `8g` | same hook as WSL |
-| One S-G or kit baseline × p01 | `summary.json` passed 1/1, `actual_cost_usd` present |
-| Wall | expect ~3 min cold (like WSL calib) |
-
-Record row in `experiments/REGISTRY.md` as `CAL-*-p01-win` when green.
-
----
-
-## WSL fallback (known good)
+### Start TCP proxy (WSL, keep alive)
 
 ```bash
-wsl.exe -d Ubuntu-22.04 -- bash /home/ayrton/verified-mechanism/run_p01_sg_calib.sh
+wsl.exe -d Ubuntu-22.04 -- bash -c \
+  'pgrep -f "socat TCP-LISTEN:2375" || socat TCP-LISTEN:2375,bind=0.0.0.0,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock &'
 ```
 
-Keep the WSL session attached for the full job. Do not rely on detached `nohup` from a dying client.
+### Env for Windows Python
+
+```powershell
+$env:PATH = "D:\Docker\bin;" + $env:PATH
+$env:DOCKER_HOST = "tcp://$((wsl -d Ubuntu-22.04 -- hostname -I).Trim().Split()[0]):2375"
+$env:LEAN_CONTAINER_MEMORY = "8g"
+$env:COMPARATOR_TIMEOUT_S = "900"
+$env:PYTHONPATH = "D:\Mis documentos\Documentos\Verified Mechanism\re-takehome-main"
+cd "D:\Mis documentos\Documentos\Verified Mechanism\re-takehome-main"
+.\.venv\Scripts\python.exe run.py ...
+```
+
+Helper: `run_p01_sg_win_smoke.sh` (git-bash; uses Windows paths for Win32 python).
 
 ---
 
-## Git / trees
+## Smoke result (2026-08-25)
 
-| Role | Path |
-|------|------|
-| SoT + preferred runtime | Windows repo above |
-| WSL clone | `~/verified-mechanism` — sync when dual-editing; not required once Windows native is green |
+| Step | Result |
+|------|--------|
+| Windows venv + imports + key | OK |
+| `docker.exe version` via TCP | OK |
+| S-G LLM call | OK (~$0.00009) |
+| Lean REPL `check_file` via docker attach | **FAIL** `WinError 10038` (not a socket) |
+| Comparator container wait | **FAIL** TCP timeout / exit 125 |
+| Output | `outputs/s_g/20260825T051130Z/` status `harness_error` |
+
+**Conclusion:** hybrid Windows-python + TCP-docker is **not** reliable for the kit’s interactive Lean REPL / long `docker run -i`.  
+**Proven path remains full WSL process tree** (`wsl.exe -d Ubuntu-22.04 -- bash …/run_p01_sg_calib.sh`) with session kept alive.
 
 ---
 
-## Non-goals of this doc
+## Kit patches for Windows (local)
 
-- Does not change science arms or COORDINATION_PLAN.
-- Does not replace comparator or kit defaults for judging (local 8g stays env override).
+| File | Change |
+|------|--------|
+| `src/re_harness/runner.py` | Register only existing signals (no bare `SIGHUP` on Windows) |
+| `src/re_harness/artifacts.py` | `os.fchmod` → fallback `os.chmod` on Windows |
+
+Defaults for judging unchanged. Revisit before submit if upstream differs.
+
+---
+
+## Recommended next moves
+
+1. **Science runs:** keep using **WSL attached** (already green Qwen/GPT-OSS p01).  
+2. **True native Windows Lean:** free C: ≥4 GB → install Docker Desktop to **D:\Docker\…** → re-smoke without TCP socat.  
+3. Optional: investigate npipe/SSH docker context instead of raw TCP (still needs a Windows engine or Desktop).
+
+---
+
+## Non-goals
+
+- Does not change S/R/H science.  
+- Does not install anything on C: beyond unavoidable installer temp attempts (cleaned).  
+- Does not claim Windows Lean path green.

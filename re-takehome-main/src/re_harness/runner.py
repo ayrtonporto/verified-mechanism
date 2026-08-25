@@ -418,10 +418,14 @@ def main(argv: list[str] | None = None) -> int:
         _shutdown_active_workers()
         raise SystemExit(128 + signum)
 
+    # Windows lacks SIGHUP; only register signals that exist on this platform.
+    _interrupt_signals = tuple(
+        getattr(signal, name)
+        for name in ("SIGINT", "SIGTERM", "SIGHUP")
+        if hasattr(signal, name)
+    )
     previous_handlers = {
-        signum: signal.signal(signum, interrupted)
-        for signum in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
-        if hasattr(signal, signal.Signals(signum).name)
+        signum: signal.signal(signum, interrupted) for signum in _interrupt_signals
     }
     try:
         out_dir, agent_name, timestamp, resume = resolve_output_dir(

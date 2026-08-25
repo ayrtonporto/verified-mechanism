@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "problem_id": "p01_linear",
+  "status": "harness_error",
+  "passed": false,
+  "points": 0,
+  "comparator": {
+    "passed": false,
+    "exit_code": 125,
+    "timed_out": false,
+    "duration_ms": 180297,
+    "output": {
+      "stdout": "",
+      "stderr": "time=\"2026-08-25T02:14:27-03:00\" level=error msg=\"error waiting for container: read tcp 172.24.0.1:50630->172.24.10.25:2375: wsarecv: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.\"\n"
+    }
+  },
+  "answer_shape": {
+    "passed": true,
+    "errors": []
+  },
+  "budget": {
+    "limit_usd": 1.0,
+    "spent_usd": 9e-05,
+    "reserved_usd": 0,
+    "accounting_complete": true
+  },
+  "within_time": true,
+  "wall_s": 220.797,
+  "models_used": [
+    "openai/gpt-oss-120b"
+  ],
+  "both_required_models_used": false,
+  "agent_error": {
+    "type": "OSError",
+    "message": "[WinError 10038] Se intentó realizar una operación en un elemento que no es un socket",
+    "traceback": "Traceback (most recent call last):\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\src\\re_harness\\worker.py\", line 98, in _run\n    result = await asyncio.wait_for(agent.solve(problem, services), timeout=agent_time)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Python\\uv-python\\cpython-3.11-windows-x86_64-none\\Lib\\asyncio\\tasks.py\", line 489, in wait_for\n    return fut.result()\n           ^^^^^^^^^^^^\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\experiments_agents\\solo.py\", line 18, in solve\n    result = await super().solve(problem, services)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\baselines\\simple_agent.py\", line 127, in solve\n    check = await services.lean.check_file(candidate)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\src\\re_harness\\lean.py\", line 131, in check_file\n    return await asyncio.to_thread(self._check_file_sync, source, timeout_s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Python\\uv-python\\cpython-3.11-windows-x86_64-none\\Lib\\asyncio\\threads.py\", line 25, in to_thread\n    return await loop.run_in_executor(None, func_call)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Python\\uv-python\\cpython-3.11-windows-x86_64-none\\Lib\\concurrent\\futures\\thread.py\", line 58, in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\src\\re_harness\\lean.py\", line 148, in _check_file_sync\n    restarted = self._ensure_alive()\n                ^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\src\\re_harness\\lean.py\", line 174, in _ensure_alive\n    self.start()\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\src\\re_harness\\lean.py\", line 193, in start\n    env_id, messages, timed_out = self._send(\"import Mathlib\", None, max(180, self.timeout_s))\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Mis documentos\\Documentos\\Verified Mechanism\\re-takehome-main\\src\\re_harness\\lean.py\", line 223, in _send\n    if remaining <= 0 or not select.select([stdout_fd], [], [], max(0.0, remaining))[0]:\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nOSError: [WinError 10038] Se intentó realizar una operación en un elemento que no es un socket\n"
+  },
+  "agent_metadata": {
+    "baseline_turn": 1,
+    "model": "openai/gpt-oss-120b"
+  }
+}

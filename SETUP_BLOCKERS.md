@@ -4,8 +4,9 @@ Estado al **2026-08-25**. Objetivo: entorno rápido y estable para el agente y
 experimentos. El kit `re-takehome-main/` se toca solo con overrides locales documentados.
 
 **WSL desbloqueado y calibrado (Qwen + GPT-OSS p01).**  
-**Pivot runtime:** preferir **Windows nativo + Docker Desktop** para jobs largos
-(ver `WINDOWS_RUNTIME.md`) — smoke nativo **pendiente**. WSL = fallback.
+**Runtime pivot:** prefer **Windows nativo** when Docker Desktop can live on **D:**.  
+Today: Desktop **blocked by low C: free space** (~3.2 GB; installer wants ~3.5 GB even with install-dir on D:).  
+Hybrid Windows-Python + WSL-docker TCP **not green** for Lean REPL. **WSL attached = production path.**
 
 ---
 
@@ -114,9 +115,10 @@ Fallback lento (~14 min/op). No usar para Part Two (sesga timeouts).
 
 ## Pendiente
 
-- [ ] **Smoke Windows nativo** (Docker Desktop + venv + p01).
+- [ ] Liberar **≥4 GB en C:** (o TEMP en D: + checks del installer) e instalar Docker Desktop en **`D:\Docker\...`** — hoy C: ~3.2 GB free bloquea.
+- [ ] Re-smoke Windows Lean **sin** TCP socat (Desktop engine).
 - [ ] Freeze `S_dev` / `S_eval`.
-- [ ] VM cloud 16–32 GB solo si Windows nativo no alcanza para matrices largas.
+- [ ] Mientras tanto: corridas científicas en **WSL attached** (ya verde).
 
 ---
 

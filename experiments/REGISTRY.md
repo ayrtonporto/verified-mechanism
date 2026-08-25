@@ -12,6 +12,7 @@ One row per **run** (one agent arm × one problem set × one timestamped harness
 |----|------|-----|-----|-----|------------|-----|---------|---------|-------------|------|-------------|------|
 | CAL-Q-p01 | 2026-08-24 | 677c1a1 | S-Q (kit baseline) | tmp_p01_only | 1/1 | 0.00017719 | 1 | 0 | 1 | 191.97s | WSL `re-takehome-main/outputs/baseline/20260824T040147Z/` | Canonical local recipe: 8g + 900s comparator; `BASELINE_MAX_TURNS=3`; Qwen; passed REPL+comparator. Still valid reference. |
 | CAL-G-p01 | 2026-08-25 | 677c1a1+dirty | S-G | tmp_p01_only | 1/1 | 0.00007538 | 0 | 1 | 1 | 193.11s | WSL `re-takehome-main/outputs/s_g/20260825T041102Z/` | Twin calib: `experiments_agents.s_g:create_agent`; recipe 8g+900s; `BASELINE_MAX_TURNS=3`; 1 turn; comparator passed. Tree had uncommitted Phase0/1 work. |
+| CAL-G-p01-win | 2026-08-25 | e177389+ | S-G | tmp_p01_only | 0/1 harness_error | 0.00009 | 0 | 1 | — | 221s | `outputs/s_g/20260825T051130Z/` | Windows Python + D:\Docker\bin\docker.exe + WSL TCP :2375. LLM OK; Lean REPL WinError 10038; comparator TCP timeout. **Not green.** Docker Desktop blocked by C: free space (~3.2GB < 3.5GB). |
 
 ## Legend
 
