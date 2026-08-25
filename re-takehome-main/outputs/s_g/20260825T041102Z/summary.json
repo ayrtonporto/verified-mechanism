@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "set": "tmp_p01_only",
+  "problems": [
+    {
+      "problem_id": "p01_linear",
+      "status": "passed",
+      "passed": true,
+      "points": 1,
+      "actual_cost_usd": 7.538e-05,
+      "wall_s": 192.582,
+      "models_used": [
+        "openai/gpt-oss-120b"
+      ],
+      "failure_reason": null
+    }
+  ],
+  "total_points": 1,
+  "max_points": 1,
+  "actual_cost_usd": 7.538e-05,
+  "wall_s_sum": 192.582,
+  "run_id": "83e9a65b0dcd427cb31b1478cf32b1e9",
+  "wall_s": 193.108,
+  "finished_at": "2026-08-25T04:14:27.388184+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "run_id": "83e9a65b0dcd427cb31b1478cf32b1e9",
+  "set": "tmp_p01_only",
+  "started_at": "2026-08-25T04:11:02.193414+00:00",
+  "agent": "experiments_agents.s_g:create_agent",
+  "agent_name": "s_g",
+  "timestamp": "20260825T041102Z",
+  "n_workers": 1,
+  "budget_usd_per_problem": 1.0,
+  "time_limit_s_per_problem": 1200.0,
+  "lean_image": "ghcr.io/verifiedmechanisms/re-takehome-lean@sha256:ee48287cd31c0a7df572093a879ed7289c2f01fec6c7af8716c605fc8c670c39",
+  "api_key_configured": true,
+  "python": "3.11.16",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "finished_at": "2026-08-25T04:14:27.388184+00:00",
+  "wall_s": 193.108,
+  "resumed": false,
+  "resumed_skipped_problems": 0,
+  "executed_problems": 1
+}

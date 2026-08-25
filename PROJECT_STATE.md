@@ -640,6 +640,27 @@ Accepted.
 
 We will empirically test which model performs which role better.
 
+### D014 — Frozen coordination plan (2026-08-24)
+
+Accepted. Authoritative detail: `design/COORDINATION_PLAN.md`.
+
+Summary:
+
+- Main score = Lean comparator accepts (Part One). Science = solos vs collab vs **same-model two-role** under matched budgets (Part Two).
+- Default stack = draft → Lean → targeted repair → optional cross-model handoff on stall → hard early stop. Optional front door: two drafts, Lean selects.
+- Same-model propose/repair is a **required control**, not optional. Cross-model gain in Lean under equal budget is unproven in the literature (see SOTA memo).
+- Idea upgrade at most one, and only after numbers: error-type routing and/or ≤4 verified lemmas on semantic stall. No debate, no day-one blackboard, no external RAG.
+- Nights measure one arm at a time; days read failures and change at most one thing. Registry + spend plan live under `experiments/` when execution starts.
+- SOTA inputs: `design/SOTA_RESEARCH_BRIEF.md`, `design/SOTA_MULTI_MODEL_MATH_MEMO.md`.
+
+### D015 — What “better coordination” means
+
+Accepted.
+
+- Primary: more problems with accepted Lean proofs under caps.
+- Secondary: honest causal story (method vs second model vs extra compute).
+- Faster/cheaper are constraints and confounders, not the main grade.
+
 ---
 
 ## 12. Unknowns / must verify from repository
@@ -750,8 +771,11 @@ the free headroom → same crash guaranteed unless host RAM is freed.
 - [x] WSL `.wslconfig` raised to `memory=10GB` (was 8GB) after pull succeeded with headroom.
 - [x] OpenRouter key in WSL `.env` only (`~/verified-mechanism/re-takehome-main/.env`, gitignored).
 - [x] First paid e2e calibration (Qwen × p01) — **passed** 2026-08-24 (see §13.11).
-- [ ] Keep Windows tree and WSL clone in sync before large coding sessions.
-- [ ] Decide on a cloud VM for the heavy Part-Two experiment matrix.
+- [x] Phase 0–1 science layer — **done** 2026-08-25 (see §16).
+- [x] Twin calib GPT-OSS S-G × p01 — **passed** 2026-08-25 (see §13.11b).
+- [ ] **Windows native runtime smoke** (Docker Desktop + kit on Windows) — decided; not yet proven (§16.3).
+- [ ] Keep Windows tree and WSL clone in sync when dual-editing (less critical once Windows runtime is green).
+- [ ] Decide on a cloud VM for the heavy Part-Two experiment matrix (optional if Windows native is stable).
 
 ### 13.9 Measured Lean timings on Ryzen/WSL (2026-08-23/24)
 
@@ -805,6 +829,30 @@ recipe with **GPT-OSS** on p01, then a mid/hard problem, before full solos.
 comparator/packaging did not finish cleanly (WSL client cuts / 180s rescores). Prefer the
 `20260824T040147Z` run as the calibration reference.
 
+### 13.11b Twin calib — GPT-OSS S-G × p01 (2026-08-25)
+
+Canonical successful run (WSL; Windows tree has a copy under the kit `outputs/`):
+
+```text
+re-takehome-main/outputs/s_g/20260825T041102Z/
+```
+
+| Field | Value |
+|---|---|
+| Condition | **S-G** `experiments_agents.s_g:create_agent` (kit baseline loop, GPT-OSS pinned) |
+| Problem set | temp 1-problem set `tmp_p01_only` (`p01_linear`) |
+| Result | **passed** `1/1`, comparator.passed=true, timed_out=false |
+| Cost | **$0.00007538** (1 LLM call; OpenRouter `usage.cost` → `actual_cost_usd`) |
+| Wall | **~193 s** (comparator ~101 s) |
+| Turns | 1 / max 3; `accepted_by_repl=true`; metadata `arm=S-G`, `calls_g=1`, `lean_checks=1` |
+| Caps | same local recipe: 8g container, 900s comparator |
+| Script | `run_p01_sg_calib.sh` |
+
+**WSL tooling note (not OOM):** several earlier S-G attempts died after LLM+checkpoint when the
+launcher dropped the WSL session (exit 127 / incomplete runs). Free RAM was high (~7–8 GB free).
+Root issue = **session lifecycle / quoting**, not Mathlib thrash. Motivates **Windows native runtime**
+pivot (§16.3, `WINDOWS_RUNTIME.md`).
+
 ### 13.12 Local-only kit note (remember before submit)
 
 Touched under `re-takehome-main/` for local dev only:
@@ -822,23 +870,86 @@ Helpers outside the kit contract (Windows tree and/or WSL home): `do_setup.sh`, 
 
 ## 14. Current status
 
-**Project stage:** Phase 0 **closed for research start**. First economic calibration point recorded.
-Next work = investigation / Phase 1–2 (instrumentation + solo baselines + collaboration design).
+**Project stage:** Phase 0–1 **done** (2026-08-25). Coordination plan frozen. Science arms
+invokable. Twin calib green. **Next = Windows runtime smoke → freeze split → S_dev solos.**
 
-No collaboration architecture is final. `submission/agent.py` is still the stub.
+- Detail plan: `design/COORDINATION_PLAN.md`
+- Builder brief (executed): `design/BUILDER_BRIEF.md`
+- SOTA memo: `design/SOTA_MULTI_MODEL_MATH_MEMO.md` (and root copy if present)
+- Experiment index: `experiments/REGISTRY.md`, `SPEND_PLAN.md`, `SPLIT.md` (**unset**),
+  `BASELINE_SEMANTICS.md`, `tables/master_matrix.md`, `RUNBOOK.md`
+- Arms: `re-takehome-main/experiments_agents/` (`s_q` `s_g` `r_q` `r_g` `h_qg` `h_gq`)
+- `submission/agent.py` still stub (no final adaptive scorer)
+- Remote: `https://github.com/ayrtonporto/verified-mechanism`
 
-**Runtime recipe (every local Lean/model run on this laptop):**
+**Runtime recipe — WSL fallback (proven):**
 
 ```bash
 export PATH="$HOME/.pyshim:$HOME/.local/bin:$PATH"
 export LEAN_CONTAINER_MEMORY=8g
-export COMPARATOR_TIMEOUT_S=900   # cold comparator; lower only when warm/proven
-# Chrome closed; host free RAM comfortably >~8–10 GB recommended
+export COMPARATOR_TIMEOUT_S=900
+export PYTHONPATH="$HOME/verified-mechanism/re-takehome-main${PYTHONPATH:+:$PYTHONPATH}"
 cd ~/verified-mechanism/re-takehome-main
+# Keep session attached for full job wall time
 ```
+
+**Runtime recipe — Windows native (target; smoke pending):** see `WINDOWS_RUNTIME.md`.
 
 Immediate objective for the next session:
 
-> Start scientific/engineering investigation: GPT-OSS p01 calibration twin, then solo baselines /
-> minimal collaboration design. Keep spends bounded. Sync WSL clone with Windows tree before
-> editing code in both places. Always use the runtime recipe above.
+> 1) Prove Windows Docker Desktop path with one p01 calib.  
+> 2) Freeze `S_dev`/`S_eval`.  
+> 3) Run S-Q/S-G on S_dev under spend OK; then R then H.  
+> No blackboard/debate. No large matrix without SPEND_PLAN + OK.
+
+---
+
+## 15. Frozen plan snapshot (2026-08-24/25)
+
+Full text: **`design/COORDINATION_PLAN.md`**. Do not contradict it in chat-only decisions; edit the file.
+
+| Piece | Choice |
+|---|---|
+| Submit goal | Max comparator passes under $1 / 8h; simple design |
+| Science goal | Per-problem S / R / H; Solo Union derived; confounds logged |
+| Arms | **S-Q, S-G, R-Q, R-G, H-QG, H-GQ** (names in plan) |
+| S semantics | Kit `simple_agent` multi-turn Lean loop — **not** silent R |
+| R semantics | Explicit propose/repair + failed proof + diagnostics + invariants |
+| H semantics | Same as R; only repair model id changes |
+| Optional later | Error routing; dual draft; ≤4 lemmas after data |
+| Rejected for now | Debate, day-one blackboard, RAG, huge search |
+| Ops | Night = one arm; registry + spend; pilot caps proposed turns S=8, R/H=1+3 |
+| Next concrete | Windows smoke → freeze split → S_dev solos |
+
+---
+
+## 16. Phase 0–1 delivery + Windows pivot (2026-08-25)
+
+### 16.1 Delivered
+
+- `experiments/*` human layer (registry, spend, split placeholder, baseline semantics, matrix).
+- `re-takehome-main/experiments_agents/*` — six factories via `--agent module:factory`.
+- Cost path verified in kit: OpenRouter `usage.cost` → events → `budget.spent_usd` / summary.
+- Calibs: CAL-Q-p01 (prior) + CAL-G-p01 (this block); spend ~$0.00025.
+- Docs: `HANDOFF.md`, `WINDOWS_RUNTIME.md`, this section.
+
+### 16.2 Decisions
+
+- **D014 — Experimental arm IDs are S/R/H** as in `design/COORDINATION_PLAN.md` (not B1/B2/A/C labels in code).
+- **D015 — S must remain baseline-faithful**; R is explicit targeted repair; H = R + other repair model.
+- **D016 — Prefer Windows native runtime for long paid jobs** after WSL session-kill pain; WSL stays fallback until/unless Windows smoke fails. Not motivated by OOM on the failed S-G attempts.
+- **D017 — No full matrix / no final adaptive agent** until split frozen and core S→R→H measured.
+
+### 16.3 Windows migration checklist
+
+See **`WINDOWS_RUNTIME.md`**. Minimum proof: Docker Desktop up, Windows venv, `.env` present
+(gitignored), one p01 pass with `actual_cost_usd` logged, REGISTRY row `*-win`.
+
+### 16.4 Spend snapshot
+
+| Item | USD |
+|---|---|
+| Lab key hard cap | ~50 |
+| Logged calib (Q+G p01) | ~0.00025 |
+| Phase 0–1 soft cap | ≤0.05 (met) |
+| Reserve final/writeup | 20–30% untouched |

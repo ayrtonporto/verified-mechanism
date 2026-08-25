@@ -1,0 +1,19 @@
+# Root gitignore extras (kit has its own under re-takehome-main/)
+
+# secrets
+.env
+**/.env
+
+# python
+**/__pycache__/
+**/.venv/
+**/*.egg-info/
+.pytest_cache/
+
+# local junk / PII
+DNI-redactado-natural.jpg
+*.nohup.out
+
+# large local logs (keep small calib artifacts under outputs/ if intentional)
+*.log
+!**/summary.json
