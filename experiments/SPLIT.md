@@ -1,12 +1,14 @@
 # Problem split (frozen)
 
-**Status:** proposed  
-**Date:** 2026-08-25  
+**Status:** accepted  
+**Date:** 2026-08-25 (proposed) · 2026-08-26 (accepted by user)  
 **Agent/session:** Codex split-agent session; local statement/Lean inspection only  
 **Authority:** `design/COORDINATION_PLAN.md` §7, `design/SPLIT_AGENT_BRIEF.md`
 
-The membership below is frozen against empirical reshuffling. Change `Status` to
-`accepted` only after user review and before substantial `S_dev` matrices begin.
+The membership below is frozen against empirical reshuffling. **Accepted by user
+before the S_dev matrix; membership is now locked** — ids must not move now that
+scientific-arm results and transcripts have been seen. `S_eval` remains an
+untouched holdout.
 
 ## Rule
 

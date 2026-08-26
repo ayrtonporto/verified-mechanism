@@ -13,12 +13,29 @@ Do not paste API keys in chat. The key lives only in gitignored `.env` files.
 
 ---
 
-## Current phase (2026-08-25)
+## Current phase (2026-08-26)
 
-**Phase 0–1 science layer: DONE** (coordination plan frozen; six arms invokable; twin calib green).
+**S_dev matrix DONE** (all 6 arms, fixed kit, 0 rate-limit errors). Split **accepted**.
+Results in `experiments/tables/master_matrix.md` + REGISTRY `Mx-*-Sdev`:
+S-Q 3 · S-G 4 · Union(S) 5 · R-Q 4 · R-G 5 · H-QG 4 · H-GQ 3 (of 9). Spend ≈ $0.41.
+
+**Kit updated:** adopted upstream rate-limit fix `8739a10` (our `7baca49`) —
+`provider.allow_fallbacks` now True so a busy provider (429) reroutes to another
+provider of the same model. Our Windows/memory kit patches preserved. See §18.
+
+**Reading:** proposer model dominates outcomes; structured repair adds a thin,
+**same-model** margin (unlocks `p10` for R-Q/R-G in 1+3 turns that S's 8 don't);
+handoff (cross-model repair) is not free — `H-GQ` lost `p05`. Model
+complementarity (Union(S)=5) is the biggest lever → argues for adaptive
+model choice in the final agent. Hard floor unsolved by any arm: `p09_imo1964`,
+`rmo_2000_2`, `rmo_2000_3`.
+
 **`submission/agent.py` still stub** (no final adaptive scorer yet).
 
-**RUNTIME RESOLVED — this is the change since the last handoff:**
+**Next:** freeze prompts/caps/arm code, then run each arm once on the `S_eval`
+holdout (Phase 6). Then build the adaptive `submission/agent.py`.
+
+**RUNTIME RESOLVED — unchanged since 2026-08-25:**
 
 > Run all paid Lean jobs on **`sshrun` (always-on Linux) over SSH, inside `tmux`.**
 > WSL is abandoned for runs (session-kill); Windows-native Desktop rejected (engine crash). No cloud.
@@ -78,12 +95,22 @@ Env recipe (already baked into the arm scripts): `LEAN_CONTAINER_MEMORY=8g`,
 
 ## Immediate next actions (a fresh chat starts here)
 
-1. `git pull` on `sshrun` to sync latest arm scripts.
-2. Freeze `S_dev` / `S_eval` (`experiments/SPLIT.md` still unset).
-3. Adapt + run **S-Q** and **S-G** on `S_dev` on `sshrun`, in tmux, **one arm at a time**; log rows in
-   `experiments/REGISTRY.md`. Then **R**, then **H**.
-4. Respect `SPEND_PLAN.md`. No full matrix, no blackboard/debate, no final adaptive agent until the
-   split is frozen and core S→R→H is measured.
+**S_dev matrix is DONE (fixed kit).** Split accepted. Now entering iteration/repair
+of the arms, then the frozen `S_eval` pass. Concretely:
+
+1. **Iterate on S_dev only** (allowed). Use the per-problem matrix to target the
+   thin repair margin and model-choice lever; do NOT touch `S_eval`.
+2. Before any `S_eval` run: **freeze** prompts, caps, routing, and arm code
+   (SPLIT.md rule), and record the frozen turn budgets (note the S=8 vs R/H=1+3
+   turn confounder — decide whether to align).
+3. Run each frozen arm **once** on `S_eval` (Phase 6); log `Ev-*-Seval` rows.
+4. Build the adaptive `submission/agent.py` (still a stub) — the data argues for
+   **model choice / union**, not more repair depth.
+5. sshrun can't `git fetch` (no creds) → push from Windows SoT, then `scp`
+   changed files over. Kit already carries the rate-limit fix (§18).
+
+Runtime/scripts on sshrun: `run_matrix_sdev.sh` (6-arm driver) + `check.sh`
+(status) under `~/Documentos/verified-mechanism/`.
 
 ---
 

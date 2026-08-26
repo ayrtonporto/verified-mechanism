@@ -1030,9 +1030,68 @@ Env recipe (already in the arm scripts): `LEAN_CONTAINER_MEMORY=8g`, `COMPARATOR
 - **D019 — `sshrun` slowness is acceptable** (8 h cap ≫ ~5-min p01 → no false timeouts). Matrix runs as
   an overnight unattended tmux job, one arm at a time.
 
-### 17.6 Next action (a fresh chat starts here)
+### 17.6 Next action (superseded by §18)
 
 1. `git pull` on `sshrun` to sync latest arm scripts.
 2. Freeze `S_dev`/`S_eval` (`experiments/SPLIT.md` still unset).
 3. Adapt + run **S-Q** and **S-G** on `S_dev` on `sshrun`, in tmux, one arm at a time; log rows in
    `experiments/REGISTRY.md`. Then **R**, then **H**. Respect `SPEND_PLAN.md`; no full matrix without OK.
+
+## 18. S_dev matrix complete + kit rate-limit fix (2026-08-26)
+
+### 18.1 Split accepted
+`experiments/SPLIT.md` **accepted** by user (was `proposed`). Membership locked;
+`S_eval` (7 ids) remains an untouched holdout. Runnable sets materialized at
+`re-takehome-main/sets/{calib,S_dev,S_eval}` (commit `f5d84e8`).
+
+### 18.2 Kit rate-limit fix adopted
+Launching S-G hit **HTTP 429** on `openai/gpt-oss-120b` (OpenRouter shared pool,
+provider AkashML). Maintainer shipped upstream fix `8739a10` ("Handle provider
+rate limits without closing the budget ledger"); we adopted it into the vendored
+kit as `7baca49` by copying the four touched files (`src/re_harness/llm.py`,
+`RULES.md`, `docs/AGENT_API.md`, `tests/test_llm.py`), which were pristine at
+upstream `f7109de`. Net functional change in `llm.py`:
+- `provider.allow_fallbacks` **False → True**: OpenRouter may reroute a busy-
+  provider request to another provider of the **same** model (model fallback still
+  off; `require_parameters` + `max_price` ceiling unchanged). Probe: rerouted
+  AkashML → CoreWeave, 0 errors.
+- 429 no longer marks the budget ledger "unknown"; releases the reservation or
+  settles reported cost (`_coerce_cost`/`_reported_cost`).
+Our two local kit patches were **preserved** (not reverted): `artifacts.py`
+`os.fchmod` Windows guard, `lean.py` `LEAN_CONTAINER_MEMORY` override. sshrun's
+kit updated by `scp` (it can't `git fetch` — no creds).
+
+### 18.3 Results (fixed kit, S_dev, 6 arms, 0×429)
+| Arm | pass/9 | REGISTRY | notes |
+|-----|:-----:|----------|-------|
+| S-Q | 3 | Mx-SQ-Sdev | p01,p03,p06 |
+| S-G | 4 | Mx-SG-Sdev | p01,p03,p05,putnam_2018_a1 |
+| Union(S) | 5 | (derived) | S-Q ∨ S-G |
+| R-Q | 4 | Mx-RQ-Sdev | +p10 vs S-Q |
+| R-G | 5 | Mx-RG-Sdev | +p10 vs S-G; best single arm |
+| H-QG | 4 | Mx-HQG-Sdev | Q propose → G repair |
+| H-GQ | 3 | Mx-HGQ-Sdev | G propose → Q repair; **lost p05** |
+
+Per-problem grid in `experiments/tables/master_matrix.md`. Spend this matrix
+≈ $0.333; cumulative ≈ $0.41. Never solved by any arm: `p09_imo1964`,
+`rmo_2000_2`, `rmo_2000_3`. Any-arm union = 6/9.
+
+### 18.4 Reading
+- **Proposer model dominates.** `p06` = Qwen-propose only; `p05` = GPT-OSS only.
+- **Repair adds a thin, same-model margin.** Only `p10` is unlocked by repair, and
+  only by R-Q/R-G — in 1+3 turns that the S baseline's 8 turns don't reach
+  (structured diagnostic repair is more turn-efficient).
+- **Handoff (cross-model repair) is not free.** H-GQ lost `p05` that same-model
+  R-G kept → the repairer works best on its own model's failure mode.
+- **Model complementarity is the biggest lever** (Union(S)=5 ≥ every single arm)
+  → the final `submission/agent.py` should favor **adaptive model choice / union**
+  over deeper repair.
+- **Confounder to freeze/document:** S uses 8 turns, R/H use propose=1+repair=3=4;
+  matched axis was **$**, not turns.
+
+### 18.5 Next action (a fresh chat starts here)
+1. Iterate on `S_dev` only (allowed); target the repair margin + model-choice lever.
+2. Freeze prompts/caps/routing/arm code (record turn budgets) **before** `S_eval`.
+3. Run each frozen arm **once** on `S_eval` (Phase 6); log `Ev-*-Seval`.
+4. Build adaptive `submission/agent.py` (still a stub).
+Driver/status scripts on sshrun: `run_matrix_sdev.sh`, `check.sh`.
