@@ -180,6 +180,45 @@ def diagnostic_category(messages: list[dict[str, Any]]) -> str:
     return "other"
 
 
+# Universal closing-tactic battery (same for every problem — no problem-specific
+# lemmas). Ordered cheap→heavy; heavy ones (decide/nlinarith) rely on the Lean
+# timeout to bound wall time. Used both as a zero-model-cost "finisher" sweep and
+# as a menu the models are told about.
+CLOSING_TACTICS: tuple[str, ...] = (
+    "simp_all",
+    "omega",
+    "norm_num",
+    "decide",
+    "nlinarith",
+    "positivity",
+    "aesop",
+    "norm_num <;> omega",
+    "simp_all <;> omega",
+    "constructor <;> omega",
+)
+
+TACTIC_MENU = (
+    "Prefer Mathlib automation to close routine goals: `omega` (linear nat/int "
+    "arithmetic), `decide` (finite/decidable props), `norm_num` (numeric), "
+    "`simp`/`simp_all`, `nlinarith`/`positivity` (inequalities), `ring`/`field_simp` "
+    "(algebra), `aesop`. Break the goal into `have` steps and discharge each with "
+    "the strongest applicable tactic; wrap uncertain steps in `first | t1 | t2` and "
+    "combine with `<;>`."
+)
+
+
+def tactic_sweep_variants(
+    challenge: str, tactics: tuple[str, ...] = CLOSING_TACTICS
+) -> list[tuple[str, str]]:
+    """Zero-model-cost candidates: challenge with its ``sorry`` placeholder(s)
+    replaced by each single closing tactic. Empty if the challenge has no
+    ``sorry`` to fill. Universal (same battery for every problem)."""
+
+    if not _SORRY_RE.search(challenge or ""):
+        return []
+    return [(t, _SORRY_RE.sub(lambda _m, _t=t: _t, challenge)) for t in tactics]
+
+
 def candidate_rank(
     *, accepted: bool, integrity_ok: bool, extracted_ok: bool,
     timed_out: bool, error_count: int, message_count: int,
