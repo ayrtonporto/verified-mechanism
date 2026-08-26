@@ -151,9 +151,12 @@ class TargetedRepairAgent:
         lean_checks = 0
 
         best_candidate = challenge
-        best_diagnostics = ""
-        best_integrity_errors: list[str] = []
         best_rank: list[int] | None = None
+        # Seed each repair from the LATEST attempt (preserve the conversational
+        # repair chain); keep best_candidate only as the final safety-net return.
+        last_candidate = challenge
+        last_diagnostics = ""
+        last_integrity_errors: list[str] = []
         consecutive_no_improve = 0
         stop_reason = "exhausted"
 
@@ -172,9 +175,9 @@ class TargetedRepairAgent:
             else:
                 messages = self._repair_messages(
                     problem,
-                    failed_proof=best_candidate,
-                    diagnostics=best_diagnostics,
-                    integrity_errors=best_integrity_errors,
+                    failed_proof=last_candidate,
+                    diagnostics=last_diagnostics,
+                    integrity_errors=last_integrity_errors,
                     turn=turn,
                     is_last=is_last,
                 )
@@ -214,11 +217,13 @@ class TargetedRepairAgent:
             )
             parent_hash = candidate_hash
 
+            last_candidate = candidate
+            last_diagnostics = a.diagnostics
+            last_integrity_errors = a.integrity_errors
+
             improved = best_rank is None or a.rank > best_rank
             if improved:
                 best_candidate = candidate
-                best_diagnostics = a.diagnostics
-                best_integrity_errors = a.integrity_errors
                 best_rank = a.rank
                 consecutive_no_improve = 0
             else:
