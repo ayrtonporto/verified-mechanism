@@ -1,4 +1,16 @@
-"""Shared R/H targeted-repair agent. H differs only by repair_model."""
+"""Shared R/H targeted-repair agent. H differs only by repair_model.
+
+Hardened per the post-S_dev review (all changes are problem-agnostic / universal):
+- best-so-far candidate seed: repair the best candidate seen, not the latest, and
+  return the best at the end (never regress an elaborating proof into a parse error
+  and then repair the regression);
+- integrity gate: a REPL-accepted candidate only counts as success if it still
+  declares every theorem/def named in the challenge and uses no sorry/admit/axiom;
+- tolerant stall detection: stop after two consecutive non-improving attempts
+  (rank-based), not one repeated diagnostic;
+- root-diagnostic preservation and explicit extraction-failure signal (see common);
+- full per-attempt provenance (hashes, category, integrity, rank, stop reason).
+"""
 
 from __future__ import annotations
 
@@ -8,13 +20,17 @@ from re_harness import AgentResult, Problem, Services
 
 from .common import (
     REPAIR_INVARIANTS,
+    candidate_rank,
     count_model_calls,
+    diagnostic_category,
     env_float,
     env_int,
-    extract_lean,
+    extract_lean_ex,
     format_messages,
+    integrity_check,
     normalize_diagnostics,
     require_model,
+    sha16,
 )
 
 DEFAULT_MAX_PROPOSE_TURNS = 1
@@ -32,6 +48,22 @@ class Attempt:
     timed_out: bool
     message_count: int
     diagnostics_norm: str
+    candidate_hash: str
+    parent_hash: str
+    extracted_ok: bool
+    integrity_ok: bool
+    integrity_errors: str
+    category: str
+    rank: list[int]
+
+
+@dataclass
+class _Assessment:
+    diagnostics: str
+    integrity_ok: bool
+    integrity_errors: list[str]
+    rank: list[int]
+    category: str
 
 
 class TargetedRepairAgent:
@@ -88,110 +120,112 @@ class TargetedRepairAgent:
             )
         )
 
+    def _assess(self, candidate: str, extracted_ok: bool, challenge: str, check) -> _Assessment:
+        diagnostics = format_messages(check.messages)
+        if check.timed_out and not diagnostics:
+            diagnostics = "Lean timed out while checking the previous candidate."
+        integrity_ok, integrity_errors = integrity_check(candidate, challenge)
+        error_count = sum(1 for m in check.messages if m.get("severity") == "error")
+        rank = candidate_rank(
+            accepted=check.accepted,
+            integrity_ok=integrity_ok,
+            extracted_ok=extracted_ok,
+            timed_out=check.timed_out,
+            error_count=error_count,
+            message_count=len(check.messages),
+        )
+        return _Assessment(
+            diagnostics=diagnostics,
+            integrity_ok=integrity_ok,
+            integrity_errors=integrity_errors,
+            rank=rank,
+            category=diagnostic_category(check.messages),
+        )
+
     async def solve(self, problem: Problem, services: Services) -> AgentResult:
-        candidate = problem.challenge
+        challenge = problem.challenge
+        candidate = challenge
         attempts: list[Attempt] = []
         calls_q = 0
         calls_g = 0
         lean_checks = 0
-        last_diag_norm = ""
-        stall_count = 0
-        diagnostics = ""
-        failed_proof = candidate
 
-        for turn in range(1, self.max_propose_turns + 1):
-            response = await services.llm.complete(
-                model=self.propose_model,
-                messages=self._propose_messages(problem, turn=turn),
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-            )
-            calls_q, calls_g = count_model_calls(self.propose_model, calls_q, calls_g)
-            candidate = extract_lean(response.content, fallback=candidate)
-            services.checkpoint(
-                candidate,
-                {
-                    "arm": self.arm,
-                    "stage": "propose",
-                    "turn": turn,
-                    "model": self.propose_model,
-                },
-            )
-            check = await services.lean.check_file(candidate)
-            lean_checks += 1
-            diagnostics = format_messages(check.messages)
-            if check.timed_out and not diagnostics:
-                diagnostics = "Lean timed out while checking the previous candidate."
-            diag_norm = normalize_diagnostics(diagnostics)
-            attempts.append(
-                Attempt(
-                    stage="propose",
-                    turn=turn,
-                    model=self.propose_model,
-                    accepted=check.accepted,
-                    timed_out=check.timed_out,
-                    message_count=len(check.messages),
-                    diagnostics_norm=diag_norm[:500],
-                )
-            )
-            if check.accepted:
-                return self._result(
-                    candidate,
-                    accepted=True,
-                    attempts=attempts,
-                    calls_q=calls_q,
-                    calls_g=calls_g,
-                    lean_checks=lean_checks,
-                )
-            if diag_norm and diag_norm == last_diag_norm:
-                stall_count += 1
+        best_candidate = challenge
+        best_diagnostics = ""
+        best_integrity_errors: list[str] = []
+        best_rank: list[int] | None = None
+        consecutive_no_improve = 0
+        stop_reason = "exhausted"
+
+        plan = [
+            ("propose", self.propose_model, t, t == self.max_propose_turns)
+            for t in range(1, self.max_propose_turns + 1)
+        ] + [
+            ("repair", self.repair_model, t, t == self.max_repair_turns)
+            for t in range(1, self.max_repair_turns + 1)
+        ]
+
+        parent_hash = sha16(challenge)
+        for stage, model, turn, is_last in plan:
+            if stage == "propose":
+                messages = self._propose_messages(problem, turn=turn)
             else:
-                stall_count = 0
-            last_diag_norm = diag_norm
-            failed_proof = candidate
-
-        for turn in range(1, self.max_repair_turns + 1):
-            response = await services.llm.complete(
-                model=self.repair_model,
-                messages=self._repair_messages(
+                messages = self._repair_messages(
                     problem,
-                    failed_proof=failed_proof,
-                    diagnostics=diagnostics,
+                    failed_proof=best_candidate,
+                    diagnostics=best_diagnostics,
+                    integrity_errors=best_integrity_errors,
                     turn=turn,
-                    is_last=turn == self.max_repair_turns,
-                ),
+                    is_last=is_last,
+                )
+            response = await services.llm.complete(
+                model=model,
+                messages=messages,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
             )
-            calls_q, calls_g = count_model_calls(self.repair_model, calls_q, calls_g)
-            candidate = extract_lean(response.content, fallback=candidate)
+            calls_q, calls_g = count_model_calls(model, calls_q, calls_g)
+            candidate, extracted_ok = extract_lean_ex(response.content, fallback=candidate)
+            candidate_hash = sha16(candidate)
             services.checkpoint(
                 candidate,
-                {
-                    "arm": self.arm,
-                    "stage": "repair",
-                    "turn": turn,
-                    "model": self.repair_model,
-                },
+                {"arm": self.arm, "stage": stage, "turn": turn, "model": model},
             )
             check = await services.lean.check_file(candidate)
             lean_checks += 1
-            diagnostics = format_messages(check.messages)
-            if check.timed_out and not diagnostics:
-                diagnostics = "Lean timed out while checking the previous candidate."
-            diag_norm = normalize_diagnostics(diagnostics)
+            a = self._assess(candidate, extracted_ok, challenge, check)
             attempts.append(
                 Attempt(
-                    stage="repair",
+                    stage=stage,
                     turn=turn,
-                    model=self.repair_model,
+                    model=model,
                     accepted=check.accepted,
                     timed_out=check.timed_out,
                     message_count=len(check.messages),
-                    diagnostics_norm=diag_norm[:500],
+                    diagnostics_norm=normalize_diagnostics(a.diagnostics)[:500],
+                    candidate_hash=candidate_hash,
+                    parent_hash=parent_hash,
+                    extracted_ok=extracted_ok,
+                    integrity_ok=a.integrity_ok,
+                    integrity_errors="; ".join(a.integrity_errors)[:300],
+                    category=a.category,
+                    rank=a.rank,
                 )
             )
-            if check.accepted:
+            parent_hash = candidate_hash
+
+            improved = best_rank is None or a.rank > best_rank
+            if improved:
+                best_candidate = candidate
+                best_diagnostics = a.diagnostics
+                best_integrity_errors = a.integrity_errors
+                best_rank = a.rank
+                consecutive_no_improve = 0
+            else:
+                consecutive_no_improve += 1
+
+            # Success only if Lean accepts AND the challenge's declarations are intact.
+            if check.accepted and a.integrity_ok:
                 return self._result(
                     candidate,
                     accepted=True,
@@ -199,24 +233,24 @@ class TargetedRepairAgent:
                     calls_q=calls_q,
                     calls_g=calls_g,
                     lean_checks=lean_checks,
+                    stop_reason="accepted",
+                    best_hash=candidate_hash,
                 )
-            # identical normalized diagnostics twice in a row → no-progress stop
-            if diag_norm and diag_norm == last_diag_norm:
-                stall_count += 1
-                if stall_count >= 1:
-                    break
-            else:
-                stall_count = 0
-            last_diag_norm = diag_norm
-            failed_proof = candidate
+
+            # No-progress stop: two consecutive non-improving repair attempts.
+            if stage == "repair" and consecutive_no_improve >= 2:
+                stop_reason = "stalled"
+                break
 
         return self._result(
-            candidate,
+            best_candidate,
             accepted=False,
             attempts=attempts,
             calls_q=calls_q,
             calls_g=calls_g,
             lean_checks=lean_checks,
+            stop_reason=stop_reason,
+            best_hash=sha16(best_candidate),
         )
 
     def _result(
@@ -228,6 +262,8 @@ class TargetedRepairAgent:
         calls_q: int,
         calls_g: int,
         lean_checks: int,
+        stop_reason: str,
+        best_hash: str,
     ) -> AgentResult:
         return AgentResult(
             solution,
@@ -239,6 +275,8 @@ class TargetedRepairAgent:
                 "max_propose_turns": self.max_propose_turns,
                 "max_repair_turns": self.max_repair_turns,
                 "accepted_by_repl": accepted,
+                "stop_reason": stop_reason,
+                "best_hash": best_hash,
                 "calls_q": calls_q,
                 "calls_g": calls_g,
                 "lean_checks": lean_checks,
@@ -282,6 +320,7 @@ class TargetedRepairAgent:
         *,
         failed_proof: str,
         diagnostics: str,
+        integrity_errors: list[str],
         turn: int,
         is_last: bool,
     ) -> list[dict[str, str]]:
@@ -294,34 +333,39 @@ class TargetedRepairAgent:
             instructions.append(
                 "This is your final repair attempt. Return the best complete Lean file only."
             )
-        user = "\n".join(
-            [
-                f"Problem id: {problem.id}",
-                f"Arm: {self.arm}",
-                f"Repair turn: {turn}/{self.max_repair_turns}",
+        user_lines = [
+            f"Problem id: {problem.id}",
+            f"Arm: {self.arm}",
+            f"Repair turn: {turn}/{self.max_repair_turns}",
+            "",
+            "Problem description:",
+            problem.description,
+            "",
+            "Original challenge Lean file:",
+            "```lean",
+            problem.challenge,
+            "```",
+            "",
+            "Best failed proof so far:",
+            "```lean",
+            failed_proof,
+            "```",
+            "",
+            "Exact Lean diagnostics:",
+            "```text",
+            diagnostics,
+            "```",
+        ]
+        if integrity_errors:
+            user_lines += [
                 "",
-                "Problem description:",
-                problem.description,
-                "",
-                "Original challenge Lean file:",
-                "```lean",
-                problem.challenge,
-                "```",
-                "",
-                "Previous failed proof:",
-                "```lean",
-                failed_proof,
-                "```",
-                "",
-                "Exact Lean diagnostics:",
-                "```text",
-                diagnostics,
-                "```",
+                "Integrity violations you MUST fix (restore the exact challenge "
+                "declarations and statements — do not rename or weaken them):",
+                *[f"- {e}" for e in integrity_errors],
             ]
-        )
         return [
             {"role": "system", "content": "\n".join(instructions)},
-            {"role": "user", "content": user},
+            {"role": "user", "content": "\n".join(user_lines)},
         ]
 
 
