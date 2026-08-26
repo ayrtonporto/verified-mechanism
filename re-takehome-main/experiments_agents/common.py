@@ -197,6 +197,10 @@ CLOSING_TACTICS: tuple[str, ...] = (
     "constructor <;> omega",
 )
 
+# Short per-check timeout for the zero-model-cost sweep so a heavy tactic
+# (decide/nlinarith on huge terms) can't burn the full Lean timeout each try.
+SWEEP_CHECK_TIMEOUT_S = 45
+
 TACTIC_MENU = (
     "Prefer Mathlib automation to close routine goals: `omega` (linear nat/int "
     "arithmetic), `decide` (finite/decidable props), `norm_num` (numeric), "

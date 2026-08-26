@@ -18,6 +18,7 @@ from __future__ import annotations
 from re_harness import AgentResult, Problem, Services
 
 from .common import (
+    SWEEP_CHECK_TIMEOUT_S,
     TACTIC_MENU,
     integrity_check,
     tactic_sweep_variants,
@@ -34,7 +35,7 @@ class TacticAugmentedRepairAgent(TargetedRepairAgent):
                 variant,
                 {"arm": self.arm, "stage": "tactic_sweep", "tactic": tactic},
             )
-            check = await services.lean.check_file(variant)
+            check = await services.lean.check_file(variant, timeout_s=SWEEP_CHECK_TIMEOUT_S)
             sweep_checks += 1
             if check.accepted and integrity_check(variant, challenge)[0]:
                 return AgentResult(
