@@ -154,6 +154,19 @@ Lean checks queue, authoritative comparator runs sequentially at the end. Cuts d
 wall time from ~sum toward ~max of per-problem times; `--repeat N` gives ×N variance
 cheaply. Dev fast-path only; the graded S_eval run uses the kit runner.
 
+### 2.11 Parallel throughput validated + ×4 sampling attack (2026-08-27)
+- `fastdrive.py` validated: p01+p03 in **40 s** wall (parallel), both comparator PASS.
+- **Attack:** MT-SF-G (grind in filler) **×4 on the 3 hard problems** = 12 concurrent
+  agents in **2910 s (~48 min), $0.20** — vs ~8 h sequential (**~10× speedup**, one
+  shared Lean container serialising ~all checks). **Result: 0/3.** p09 →
+  multi_theorem_fallback ×4 (p09_a slot never cracked); rmo_2000_2 / rmo_2000_3 →
+  sketch_exhausted ×4. Brute-force sampling of current arms does **not** move the
+  cruxes — consistent with §2.9 (models stall at the one hard math step, not chaining).
+- **Untried levers with a real mechanistic reason (not brute force):** premise search
+  by *type* (`#find`, distinct from the `exact?`/`apply?` StateTree already harvests)
+  and MenuTree tool-calling selection — could surface the missing crux lemma
+  (e.g. `orderOf_dvd_iff_pow_eq_one` for p09_a in `ZMod 7`) universally.
+
 Code substrate: `experiments_agents/{multitheorem,sketchfill}.py` + factories
 `mt_g.py`, `sf_g.py`, `mt_sf_g.py`. Run scripts on sshrun: `run_mt_p09.sh`,
 `run_mt_sf_hard.sh`. Dev driver: `fastdrive.py`. Probes: `probe_grind.py`,
