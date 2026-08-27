@@ -50,7 +50,7 @@ class BestOfNAgent:
     ):
         self.arm = arm
         self.model = require_model(model)
-        self.n = n if n is not None else env_int("BON_N", 8, minimum=1, maximum=24)
+        self.n = n if n is not None else env_int("BON_N", 8, minimum=1, maximum=512)
         self.temperature = (
             temperature
             if temperature is not None

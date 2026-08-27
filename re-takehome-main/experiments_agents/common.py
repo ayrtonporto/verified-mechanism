@@ -192,6 +192,7 @@ CLOSING_TACTICS: tuple[str, ...] = (
     "nlinarith",
     "positivity",
     "aesop",
+    "grind",
     "norm_num <;> omega",
     "simp_all <;> omega",
     "constructor <;> omega",
