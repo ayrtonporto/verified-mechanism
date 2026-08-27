@@ -13,7 +13,25 @@ Do not paste API keys in chat. The key lives only in gitignored `.env` files.
 
 ---
 
-## Current phase (2026-08-26)
+## Current phase (2026-08-27) — read `PROJECT_STATE.md` §19
+
+**S_dev iteration DONE, including verified proof-state search.** Frontier is stuck
+at **6/9** (union of all mechanisms); the 3 hard problems (`p09_imo1964`,
+`rmo_2000_2`, `rmo_2000_3`) are unsolved by everything; best single arm 5/9. Built
+and tested: hardened repair, AT/SK/BON/PF wrappers, and **StateTree v1+v2/P0**
+(COPRA-style verified search + local Mathlib premises, `experiments_agents/
+{leanprobe,statetree}.py`). Even the properly-built search closes **zero** problems
+natively and stays at depth ≤2 with a very high invalid-action rate → the evidenced
+conclusion is that **the bottleneck is the Q/G action policy, not the harness or the
+architecture.** **Recommendation: freeze a robust agent** (sweep → short repair →
+StateTree v2 safe stage → best verified candidate; ~5–6/9, variance-proof floor)
+and write up the finding. Only untested lever = P1 multi-theorem for p09 (low EV).
+Full detail, code inventory, and next actions: **`PROJECT_STATE.md` §19**.
+`submission/agent.py` still a stub. `S_eval` untouched.
+
+---
+
+## Prior phase (2026-08-26)
 
 **S_dev matrix DONE** (all 6 arms, fixed kit, 0 rate-limit errors). Split **accepted**.
 Results in `experiments/tables/master_matrix.md` + REGISTRY `Mx-*-Sdev`:
@@ -93,7 +111,20 @@ Env recipe (already baked into the arm scripts): `LEAN_CONTAINER_MEMORY=8g`,
 
 ---
 
-## Immediate next actions (a fresh chat starts here)
+## Immediate next actions (a fresh chat starts here) — see `PROJECT_STATE.md` §19.8
+
+**Decision point (deadline 2026-08-30):** (a) **freeze the robust agent** —
+recommended — `submission/agent.py` = sweep → short propose+repair (G then Q) →
+StateTree v2 as a safe extra stage → best strictly-verified candidate; then run the
+frozen arms once on `S_eval` and write the report (ceiling = model action policy,
+with the verified-progress evidence). OR (b) spend the last budget on **P1
+multi-theorem** so `p09` enters the tree (low EV). Also backfill
+`master_matrix.md`/`REGISTRY.md` with the AT/SK/BON/PF/ST results. Code substrate:
+`experiments_agents/{leanprobe,statetree}.py`. The older list below is superseded.
+
+---
+
+### (superseded) earlier iteration plan
 
 **S_dev matrix is DONE (fixed kit).** Split accepted. Now entering iteration/repair
 of the arms, then the frozen `S_eval` pass. Concretely:

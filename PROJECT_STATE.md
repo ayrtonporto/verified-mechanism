@@ -1089,9 +1089,110 @@ Per-problem grid in `experiments/tables/master_matrix.md`. Spend this matrix
 - **Confounder to freeze/document:** S uses 8 turns, R/H use propose=1+repair=3=4;
   matched axis was **$**, not turns.
 
-### 18.5 Next action (a fresh chat starts here)
+### 18.5 Next action (superseded by §19)
 1. Iterate on `S_dev` only (allowed); target the repair margin + model-choice lever.
 2. Freeze prompts/caps/routing/arm code (record turn budgets) **before** `S_eval`.
 3. Run each frozen arm **once** on `S_eval` (Phase 6); log `Ev-*-Seval`.
 4. Build adaptive `submission/agent.py` (still a stub).
 Driver/status scripts on sshrun: `run_matrix_sdev.sh`, `check.sh`.
+
+## 19. S_dev iteration + verified proof-search + the ceiling finding (2026-08-27)
+
+**One-line status:** we iterated hard on `S_dev`. The solvable frontier is **6/9**
+(union of every mechanism); the 3 hard problems `p09_imo1964`, `rmo_2000_2`,
+`rmo_2000_3` are **unsolved by everything**. Best single arm = 5/9. Extensive
+evidence (below) indicates the bottleneck with the two fixed models **Q+G is the
+action/proof policy quality, not the harness or the search architecture.**
+Recommendation: **freeze a robust agent** (sweep → short repair → StateTree v2 as a
+safe extra stage → best verified candidate) and write up the finding. `S_eval`
+still untouched. `submission/agent.py` still a stub.
+
+### 19.1 What "improving on S_dev" produced (so the dev set's value is on record)
+The dev set did its job: it let us discover, cheaply and before the holdout, that
+neither more whole-file prompting nor verified search moves the frontier with Q/G.
+Concrete, durable takeaways:
+- **Deterministic tactic sweep = the only variance-proof win.** `p01` (`nlinarith`)
+  and `p05` (`simp_all`) are solved with zero model calls, every run. Keep it as
+  stage 0 of any final agent.
+- **High run-to-run variance** (R-G scored 5/9 then 2/9 same config). Single-run ±1
+  is noise; nothing was repeated ×3.
+
+### 19.2 Iteration round 1 — universal wrappers (all built, committed)
+Hardened repair (`repair.py`: best-so-far, integrity gate, stall, seed-latest) plus
+four universal arms in `experiments_agents/`:
+- `AT-G` auto-tactics (sweep + tactic menu) = 4/9; `SK-G` skeleton = 5/9;
+  `BON-G` best-of-N(8) = 5/9; `PF-GQ` planner→formalizer = 4/9.
+- **Frontier unchanged at 6/9.** Repair adds a thin, same-model margin (`p10`);
+  handoff is not free (`H-GQ` lost `p05`); model complementarity (Union(S)=5) is the
+  biggest lever. See `experiments/EXPERIMENT_S_DEV_ITERATION_RESULTS.md`.
+
+### 19.3 Big-changer — verified proof-state search (StateTree)
+Built a real COPRA-style search (no harness change) — the reusable substrate:
+- `leanprobe.py`: extract exact goal state (`trace_state`), harvest real Mathlib
+  premises (`apply?`/`exact?` → concrete tactics), classify a prefix
+  invalid/solved/partial in one probe, state hashing.
+- `statetree.py`: best-first tree over Lean-verified tactic prefixes + exact goals;
+  per-node local premises, batched model actions (JSON), Lean-checked children,
+  dedup, backtracking; deterministic sweep stage-0; **fallback = full sweep+repair
+  loop so StateTree can never score below the tactic-augmented baseline.**
+- Arms: `st_g` (=ST-GG control, G proposes/G repairs), `st_gq` (G proposes / Q
+  repairs failed actions), `st_g_nop` (premise ablation).
+
+**Results across 4 configurations (ST-G v1, ST-GQ, ST-G v2/P0, and a 2-hard probe):**
+- Score 4–5/9 (all from sweep or fallback). **Zero problems closed natively by the
+  tree** (`state_tree_solved` = 0) in any configuration.
+- **v2/P0** (per `experiments/…BRIEF_IMPLEMENTACION_STATETREE_V2_ES.md`: per-node
+  retry rounds, action-level repair from exact Lean diagnostics, fixed tried-list,
+  stratified/Pareto frontier) fixed the early frontier collapse — the search now
+  uses the full budget and explores — but on hard problems it stays at **max depth
+  ≤ 2** with a **very high invalid-action rate** (18/33/39 rejected actions per hard
+  problem) and still closes nothing.
+
+### 19.4 The finding (well-evidenced, not premature)
+With a properly built search (v1 + P0: retry, error-guided action repair,
+stratified frontier), Q and G — general chat models, not trained tactic/value
+policies — produce a **low-hit-rate stream of tactic proposals** and cannot chain
+more than ~2 verified steps on the hard problems. The limit is the **action policy**,
+not the harness, the architecture, or premise availability. This is the honest,
+defensible scientific result for the writeup; back it with the verified-progress
+instrumentation (max verified depth, valid-vs-invalid children per call, novel
+states per call), not final solves alone.
+
+### 19.5 Only untested lever (low EV): P1 multi-theorem
+`p09_imo1964` has two theorems and currently **bypasses the tree** (single-theorem
+v1). The brief argues p09 is "probably reachable." But the fully-tested
+single-theorem hard problems (`p10`, `rmo_2000_2`) already show the depth-2 /
+high-invalid ceiling under P0, so the prior that multi-theorem support unlocks p09
+is weak. `rmo_2000_3` (Finset analysis) is the most likely true capability limit.
+
+### 19.6 Recommended submission (deadline 2026-08-30)
+Freeze this pipeline in `submission/agent.py`:
+```
+integrity hash → deterministic sweep → short whole-file propose+repair (G then Q)
+→ StateTree v2 (safe extra stage, never below baseline) → best strictly-verified
+candidate → strict Lean check → integrity gate → comparator
+```
+Expected ~5–6/9 on solvable problems, variance-proof floor from the sweep. Then run
+each frozen arm once on `S_eval` and write the report distinguishing: verified local
+progress, child-generation efficiency, subgoals closed, final accepted proofs.
+
+### 19.7 Docs + code for a fresh chat
+- Analysis chain: `EXPERIMENT_S_dev_matrix.md` → `EXPERIMENT_S_DEV_ITERATION_RESULTS.md`
+  → `EXPERIMENT_S_DEV_BIG_CHANGER_RECOMMENDATIONS.md` → `CONTINUATION_BRIEF_FOR_AGENTS.md`
+  → `BRIEF_IMPLEMENTACION_STATETREE_V2_ES.md` (the implemented P0 spec).
+- Full per-problem matrix (12 mechanisms) in `experiments/tables/master_matrix.md`
+  needs the AT/SK/BON/PF/ST rows appended (only the base 6 arms are logged there;
+  the rest are in the analysis docs — TODO to backfill the table + REGISTRY).
+- Code substrate to build on: `experiments_agents/{leanprobe,statetree}.py`.
+- sshrun run scripts: `run_st_g.sh`, `run_ideas4.sh`, `run_matrix_sdev.sh`, `check.sh`.
+
+### 19.8 Next action (a fresh chat starts here)
+1. **Decide:** freeze the robust agent (§19.6) — recommended — OR spend the last
+   budget on P1 multi-theorem for p09 (low EV; §19.5).
+2. If freezing: implement `submission/agent.py` per §19.6, verify it end-to-end on
+   `calib`+a couple S_dev, then run the frozen arms once on `S_eval`.
+3. Backfill `master_matrix.md` + `REGISTRY.md` with the AT/SK/BON/PF/ST results.
+4. Write the report; be explicit that the ceiling is the model action policy, with
+   the verified-progress evidence.
+**Constraints unchanged:** Q+G only, universal, Lean-only, no statement weakening,
+$1/8h per problem, holdout run-once.
