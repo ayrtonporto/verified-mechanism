@@ -113,14 +113,23 @@ def _block_has_sorry(block: str) -> bool:
 
 
 def _merge_preambles(preambles: list[str]) -> str:
+    """Dedup preamble lines and emit ALL `import`s first, then everything else.
+
+    Lean 4 (and the comparator's real `lake build`) require every `import` to precede
+    any other command; a merge that puts an `import` after an `open`/`set_option`
+    compiles under the lenient REPL but is rejected by the build. So partition.
+    """
     seen: set[str] = set()
-    merged: list[str] = []
+    imports: list[str] = []
+    rest: list[str] = []
     for pre in preambles:
         for ln in _preamble_lines(pre):
-            if ln.strip() not in seen:
-                seen.add(ln.strip())
-                merged.append(ln)
-    return "\n".join(merged)
+            key = ln.strip()
+            if key in seen:
+                continue
+            seen.add(key)
+            (imports if key.startswith("import") else rest).append(ln)
+    return "\n".join(imports + rest)
 
 
 class MultiTheoremAgent:
