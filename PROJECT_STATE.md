@@ -1254,3 +1254,48 @@ largely mitigated by `fastdrive` parallelism.
    as the hard-problem branch; bump N to ~18 so p09 passes reliably; keep sweep→grind→
    repair→NearMiss as the floor for the rest. Then the frozen `S_eval` run.
 3. Backfill `REGISTRY.md` / `master_matrix.md` with the p09 solve.
+
+## 21. Pivot to the graded deliverable: universal escalation-ladder `submission/agent.py` (2026-08-28)
+
+**Trigger.** `re-takehome-main/submission/agent.py` was still the `NotImplementedError`
+stub — the graded artifact (the judge clones the repo and runs THIS on a private holdout,
+$1 + 8 h per problem) did not exist. All working mechanisms lived in `experiments_agents/`
+and dev drivers. The dev frontier is a test bench, not the deliverable. Full auditor brief:
+`experiments/AUDIT_BRIEF_2026-08-28.md`.
+
+### 21.1 What was built
+- **`submission/agent.py` — a universal, budget/time-aware escalation ladder.** The
+  verifier is the only difficulty classifier (no per-problem/category routing):
+  T0 zero-model tactic sweep → single-decl problems proved whole-file → multi-decl problems
+  split into self-contained slots, combined, **de-duplicated**, with a whole-file last
+  resort. Per-slot escalation runs concurrent HintedProver + nm_pf sample batches (model
+  calls overlap over one serial Lean container) + NearMiss rescue. No `native_decide`;
+  integrity-checked; checkpoints the best partial.
+- **`experiments_agents/hintedprover.py` (HP)** — universal cast-ℤ + `nlinarith [hints]` +
+  squeeze idiom with goal-fed repair. **`experiments_agents/hintedcloser.py` (HC)** — the
+  narrow "fill-the-bracket" interface (model emits a JSON plan of `have`s + hint lists; we
+  assemble and verify each step incrementally, re-sampling only a failing bracket).
+
+### 21.2 Honest measured status (comparator, not heuristics)
+- First end-to-end run scored **3/9**; a fastdrive metric bug (`accepted_by_repl` not set)
+  and a **multi-declaration split bug** (the theorem slot re-declares the answer → the
+  merge carries the name twice → Lean rejects) had masked it. Reading the solutions showed
+  ALL four failures (p06, p09, p10, putnam) were that plumbing bug, not proving failures.
+- Fixes: `_dedup_decls`, whole-vs-split routing, `accepted_by_repl` on verified returns,
+  heavier per-slot sampling, nm_pf-balanced batch pool. Dedup **recovered p06** (comparator
+  PASS). Confirmed floor: **p01, p03, p05, p06 = 4/9**. p09 (needs `p09_a`), p10 (`IsGreatest`
+  upper bound), putnam (set characterisation) still require the hard theorem actually
+  proved; an **aggressive per-problem attack** (heavy sampling ladder + HC on rmo_2000_2)
+  is running to measure the true automated frontier.
+- **Caveat on the old "7/9":** it was a UNION across arms/runs plus a hand-assembled p09
+  (§2.12) — not something one automated agent achieved per problem. The submission bar is
+  higher; treat 4/9 as the honest automated floor until the attack reports.
+
+### 21.3 rmo_2000_2 reachability (science, not submission)
+A hand-built cast-ℤ squeeze proof **passes the authoritative comparator** (permitted axioms
+only) — `experiments/reachability/rmo_2000_2_reachable.lean`. So rmo_2000_2 is NOT a pure
+capability ceiling; yet HP gives **0/16** and the models don't reach it through the
+interfaces tried. Clean writeup story: reachable-but-not-reached (interface/formalisation
+limit), distinct from p09's harness-limit (solved by scale). rmo_2000_3 (Abel over Finset)
+remains the likeliest genuine ceiling. The reachability proof must NEVER be keyed into the
+submission.

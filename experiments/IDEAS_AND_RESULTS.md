@@ -217,3 +217,23 @@ sampled independently, best-of-N kept, winners combined, comparator.
   above zero (different action interface), not add samples: HintedCloser (nlinarith hint
   proposal) + cast-to-ℤ for rmo_2000_2; MenuTree/premise-by-type + `suffices` cuts for
   rmo_2000_3. Handoff: `experiments/HANDOFF_ATTACK_RMO_2026-08-28.md`.
+
+### 2.14 Deliverable ladder + rmo_2000_2 reachability + honest re-score (2026-08-28)
+- **rmo_2000_2 is REACHABLE.** Hand-built cast-ℤ squeeze (`zify` guard → bound `y^3`
+  between `(x+1)^3` and `(x+3)^3` via `nlinarith [sq_nonneg …]` → `omega` forces `y=x+2` →
+  factor `2x(x-9)=0`) **passes the authoritative comparator**
+  (`experiments/reachability/rmo_2000_2_reachable.lean`). Refutes the §2.13 "capability
+  ceiling" verdict at the reachability level — same pivot as p09 §2.12. Probe only; never
+  keyed into the submission.
+- **HintedProver (HP)** — universal cast-ℤ + `nlinarith [hints]` + squeeze idiom, goal-fed
+  repair. On rmo_2000_2: **0/16** (HP-GP, N=16). The models produce the strategy but not
+  the multi-step nlinarith certificate → the idiom-prompt alone does not raise the rate
+  above zero. **HintedCloser (HC)** — narrow JSON "fill-the-bracket" interface with
+  incremental per-step verification — built and under test.
+- **Graded deliverable built:** `submission/agent.py` was an empty stub; now a universal
+  escalation ladder (T0 sweep → whole-file vs split+combine+**dedup** → per-slot HP/nm_pf
+  batches + NearMiss). Honest comparator re-score of the first run = **3/9**, raised to a
+  confirmed **4/9** (p01,p03,p05,p06) after fixing a multi-decl split de-duplication bug;
+  p09/p10/putnam need the hard theorem actually proved (aggressive attack in progress).
+  Key lesson: "no `sorry`" ≠ comparator PASS — a headless partial or a duplicated
+  declaration compiles-adjacent yet fails grading; always score with the comparator.
