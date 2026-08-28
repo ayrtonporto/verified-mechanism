@@ -56,8 +56,9 @@ async def main() -> None:
     run_dir = args.out / time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     run_dir.mkdir(parents=True, exist_ok=True)
     events = EventLogger(run_dir / "events.jsonl", problem_id="fastdrive", secrets=(api_key,))
-    budget = BudgetLedger(settings.budget_usd)
-    llm = LLMClient(api_key=api_key, budget=budget, events=events)
+    # ONE shared Lean container (memory-bound; its lock serialises checks). But each
+    # agent gets its OWN budget ledger + LLM client, so one failed OpenRouter call
+    # cannot poison a shared ledger and disable every other agent's calls.
     lean = LeanClient(image=settings.lean_image, events=events, session_id="fastdrive",
                       timeout_s=settings.lean_check_timeout_s)
     factory = _load_factory(args.agent)
@@ -70,23 +71,23 @@ async def main() -> None:
         description = desc_p.read_text(encoding="utf-8")
         challenge = chal_p.read_text(encoding="utf-8")
         for r in range(args.repeat):
-            tasks.append(_solve(spec, description, challenge, r, factory, llm, lean,
-                                run_dir, gate))
+            tasks.append(_solve(spec, description, challenge, r, factory, api_key,
+                                settings.budget_usd, events, lean, run_dir, gate))
 
     started = time.monotonic()
     results = await asyncio.gather(*tasks, return_exceptions=True)
     wall = time.monotonic() - started
 
     # authoritative comparator, sequential (each spawns its own container)
-    spent = budget.snapshot().spent_usd
-    print(f"\n=== fastdrive: {len(tasks)} agent runs in {wall:.0f}s wall "
-          f"(spent ${spent:.4f}) ===")
+    print(f"\n=== fastdrive: {len(tasks)} agent runs in {wall:.0f}s wall ===")
     scored: dict[str, list[bool]] = {}
+    total_spent = 0.0
     for item in results:
         if isinstance(item, Exception):
             print(f"  EXCEPTION: {type(item).__name__}: {item}")
             continue
-        spec, r, res = item
+        spec, r, res, agent_spent = item
+        total_spent += agent_spent
         solution = res.solution
         repl_ok = bool(res.metadata.get("accepted_by_repl"))
         passed = False
@@ -102,12 +103,12 @@ async def main() -> None:
               f"stop={res.metadata.get('stop_reason')}")
 
     total = sum(any(v) for v in scored.values())
-    print(f"\n=== SCORE (any-repeat pass) = {total}/{len(scored)} ===")
+    print(f"\n=== SCORE (any-repeat pass) = {total}/{len(scored)}  (spent ${total_spent:.4f}) ===")
     for pid, passes in sorted(scored.items()):
         print(f"  {pid:20s} {sum(passes)}/{len(passes)} repeats passed")
     (run_dir / "summary.json").write_text(json.dumps(
         {"score": total, "n": len(scored), "wall_s": wall,
-         "spent_usd": spent,
+         "spent_usd": total_spent,
          "by_problem": {k: v for k, v in scored.items()}}, indent=2), encoding="utf-8")
     print("DONE_0")
 
@@ -117,19 +118,27 @@ def _read(spec, pset, which):
     return chal_p.read_text(encoding="utf-8")
 
 
-async def _solve(spec, description, challenge, r, factory, llm, lean, run_dir, gate):
+async def _solve(spec, description, challenge, r, factory, api_key, budget_usd,
+                 events, lean, run_dir, gate):
     async def run():
         sol_path = run_dir / f"{spec.id}__r{r}__ckpt.lean"
 
         def checkpoint(source, metadata=None):
             sol_path.write_text(source, encoding="utf-8")
 
+        # per-agent budget + LLM client: a failed OpenRouter call disables only THIS
+        # agent's ledger, never the whole batch. The Lean container stays shared.
+        budget = BudgetLedger(budget_usd)
+        llm = LLMClient(api_key=api_key, budget=budget, events=events)
         problem = Problem(id=spec.id, description=description, challenge=challenge,
                           metadata=dict(spec.metadata))
         services = Services(llm=llm, lean=lean, checkpoint=checkpoint)
         agent = factory()
-        res = await agent.solve(problem, services)
-        return spec, r, res
+        try:
+            res = await agent.solve(problem, services)
+        finally:
+            spent = budget.snapshot().spent_usd
+        return spec, r, res, spent
 
     if gate is None:
         return await run()
