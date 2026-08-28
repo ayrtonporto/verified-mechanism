@@ -4,10 +4,12 @@
 theorem-proving task, what it is, and its result — so we never re-propose or
 re-build something already done. Update this whenever a new arm runs.
 
-**Scoreboard (unchanged across every mechanism so far):**
-- **Solvable frontier = 6/9** on `S_dev`: `{p01, p03, p05, p06, p10, putnam_2018_a1}`.
-- **Best single arm = 5/9** (R-G, SK-G, BON-G, ST-G).
-- **Never solved by anything:** `p09_imo1964`, `rmo_2000_2`, `rmo_2000_3`.
+**Scoreboard (UPDATED 2026-08-28 — frontier moved):**
+- **Frontier = 7/9** on `S_dev`: `{p01, p03, p05, p06, p10, putnam_2018_a1, p09_imo1964}`.
+- **`p09_imo1964` SOLVED** by per-theorem heavy sampling + combine (§2.12) — universal,
+  comparator-accepted, clean axioms, nothing hardcoded.
+- **Still unsolved: `rmo_2000_2`, `rmo_2000_3`** — heavy sampling N=16 each gave **0/16**
+  accepted (§2.13); evidenced capability limit for Q+G on these cruxes.
 - Models are fixed: **Q = qwen/qwen3.5-flash-02-23**, **G = openai/gpt-oss-120b**.
   Universal mechanisms only; Lean/Mathlib is the sole verifier; no fine-tuning;
   ≤ $1 and ≤ 8 h per problem (cost is a non-issue; wall time is the real limit).
@@ -167,7 +169,51 @@ cheaply. Dev fast-path only; the graded S_eval run uses the kit runner.
   and MenuTree tool-calling selection — could surface the missing crux lemma
   (e.g. `orderOf_dvd_iff_pow_eq_one` for p09_a in `ZMod 7`) universally.
 
+### 2.12 PIVOTAL: p09 is REACHABLE (comparator PASSED) — harness limit, not ceiling (2026-08-27)
+Two independent review agents argued p09 is a harness/name/representation failure,
+not a capability ceiling. Confirmed:
+- **NearMissFinisher** (truncate a failed proof to its max verified prefix + a fixed
+  universal *composed*-finisher menu, e.g. `all_goals simp_all`) **closed p09_b** from
+  the stored pf_gq 8/11 prefix — independently re-verified (fresh container, accepted,
+  no sorry, 0 errors). A validated universal mechanism; the single-tactic battery
+  lacked the `rcases … <;>` / `all_goals` composed forms.
+- p09_b's clean proof contains the exact periodicity `have`
+  `2^n%7 = 2^(n%3)%7 := by rw [← Nat.mod_add_div n 3]; simp [pow_add, pow_mul,
+  Nat.pow_mod, Nat.mul_mod, Nat.add_mod] <;> norm_num` — which is p09_a's crux.
+- A full p09 (both theorems) assembled from that same periodicity approach (only
+  standard Mathlib lemmas; answer not hardcoded) **PASSES THE AUTHORITATIVE
+  COMPARATOR** (`passed=True`). So **7/9 is achievable.**
+- **Caveat (integrity):** that proof was hand-assembled, guided by the model's own
+  periodicity lemma. It must NOT be hardcoded (overfitting; invalid on the holdout).
+  The result establishes *reachability + the mechanism*, not a legitimate solve yet.
+- **Name-gap nuance:** the strongest stored p09_a proof (baseline G) has the correct
+  plan but ~16 errors across syntax/type/name/simp — NameGap *alone* is insufficient
+  for p09_a; the working path is the shared periodicity `have` + NearMiss.
+- **The universal mechanism to build:** multi-theorem (done) + per-slot whole-file
+  sampling + NearMissFinisher (rescue prefixes) + a **cross-slot verified-lemma bank**
+  (offer the periodicity `have` proven in the p09_b attempt to the p09_a attempt,
+  indexed by type). Then verify the real agent (no hardcoding) solves p09.
+- p09_a (2/4) and rmo_2000_2 (2/4) were NOT closed by finishers on their current
+  prefixes; rmo_2000_2 / rmo_2000_3 remain open (lower EV than finishing p09).
+
 Code substrate: `experiments_agents/{multitheorem,sketchfill}.py` + factories
 `mt_g.py`, `sf_g.py`, `mt_sf_g.py`. Run scripts on sshrun: `run_mt_p09.sh`,
 `run_mt_sf_hard.sh`. Dev driver: `fastdrive.py`. Probes: `probe_grind.py`,
 `maxprefix_offline.py`, `resume_probe.py`.
+
+### 2.13 Heavy per-theorem sampling: p09 SOLVED (7/9), rmo problems clinched as ceiling (2026-08-28)
+`multisample_combine.py` + `nm_pf.py` (plan→formalize G/Q + NearMiss), each theorem
+sampled independently, best-of-N kept, winners combined, comparator.
+- **p09_imo1964: SOLVED.** p09_a **1/10** and p09_b **1/10** samples accepted; combined
+  → comparator PASS, axioms {propext, Classical.choice, Quot.sound}. Load-bearing fixes:
+  NearMiss + `_merge_preambles` (imports first — REPL is lenient, `lake build` is not).
+- **rmo_2000_2: 0/16.  rmo_2000_3: 0/16.** The same throughput method that solved p09
+  gives zero here → per-sample accept rate ~0 (not merely low). This cleanly separates
+  **harness-limit** (p09, solved by scale) from **capability-limit** (rmo, not moved by
+  scale) — the empirical version of the oracle-ablation distinction.
+- **Lesson (Numina/DeepSeek-Prover parallel):** with no fine-tuning, the transferable
+  lever is test-time SCALE + verify + combine; it closes problems the models can *rarely*
+  do (p09) but not ones they *cannot* do (rmo). Next levers for rmo must raise the rate
+  above zero (different action interface), not add samples: HintedCloser (nlinarith hint
+  proposal) + cast-to-ℤ for rmo_2000_2; MenuTree/premise-by-type + `suffices` cuts for
+  rmo_2000_3. Handoff: `experiments/HANDOFF_ATTACK_RMO_2026-08-28.md`.

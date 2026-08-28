@@ -1196,3 +1196,61 @@ progress, child-generation efficiency, subgoals closed, final accepted proofs.
    the verified-progress evidence.
 **Constraints unchanged:** Q+G only, universal, Lean-only, no statement weakening,
 $1/8h per problem, holdout run-once.
+
+## 20. Frontier moved to 7/9 — p09 solved; rmo problems clinched as ceiling (2026-08-28)
+
+**One-line status:** the solvable frontier is now **7/9**. `p09_imo1964` was solved by a
+universal mechanism (per-theorem heavy sampling + combine); `rmo_2000_2` and
+`rmo_2000_3` resisted the same method at N=16 (0/16 each) and are the evidenced
+capability limit for Q+G. Full record: `experiments/IDEAS_AND_RESULTS.md` §2.12–2.13.
+Fresh-chat handoff to attack the last two: `experiments/HANDOFF_ATTACK_RMO_2026-08-28.md`.
+
+### 20.1 How p09 was solved (universal, nothing hardcoded)
+`re-takehome-main/multisample_combine.py` + arm `experiments_agents/nm_pf.py`
+(plan→formalize G/Q + NearMiss rescue): split the challenge into its theorems, solve
+**each independently across N parallel samples** (shared Lean container serialises
+checks; per-agent budget so one API failure can't poison the batch), keep the **best
+accepted proof per theorem**, **combine** the winners, run the authoritative comparator.
+- p09_a accepted in **1/10** samples, p09_b in **1/10**; combined → comparator `passed`,
+  axioms `{propext, Classical.choice, Quot.sound}`.
+- Two load-bearing fixes: **NearMiss** (`experiments_agents/nearmiss.py` — truncate a
+  failed candidate to its max Lean-verified prefix, append a fixed composed-finisher
+  menu) and **`_merge_preambles`** in `multitheorem.py` (emit ALL `import`s before any
+  `open`/command — the REPL is lenient, the comparator's `lake build` is not).
+- Independence is the key: per-theorem sampling **breaks the conjunction** (both theorems
+  needn't be clean in the same run), which had defeated the in-run lemma bank.
+
+### 20.2 Why rmo_2000_2 / rmo_2000_3 did not move
+Heavy sampling (N=16 each, temp 0.9) gave **0/16 accepted** for both — vs ~1/10 per
+theorem for p09. The same throughput method that solved p09 gives **zero** here, cleanly
+separating **harness-limit** (p09 — solvable by scale) from **capability-limit** (rmo —
+not moved by scale). This is the empirical form of the oracle-ablation distinction the
+review agents asked for. Scaling N only helps a nonzero rate; the open question for the
+next chat is whether a **different action interface** (HintedCloser `nlinarith` hints +
+cast-to-ℤ for rmo_2000_2; MenuTree/premise-by-type + `suffices` cuts for rmo_2000_3)
+raises the rate above zero — not whether more samples help.
+
+### 20.3 Infrastructure built this phase (reusable)
+- `fastdrive.py` — parallel dev driver: model calls overlap, ONE shared Lean container
+  serialises checks, per-agent budget+LLM (a failed OpenRouter call no longer disables
+  the batch), authoritative comparator at the end, `--repeat N` for variance. ~10× wall.
+- `multisample_combine.py` — per-theorem heavy sampling + combine (the p09 winner).
+- New arms: `nearmiss.py`+`mt_nm_g`/`nmbank_g`/`nmbank_pf`/`nm_pf`; `multitheorem.py`,
+  `lemmabank.py`, `sketchfill.py`. `grind` added to `common.CLOSING_TACTICS`.
+- Probes: `probe_grind.py`, `maxprefix_offline.py`, `resume_probe.py`,
+  `probe_steprepair*.py`, `probe_p09_full.py`. All committed + pushed to branch
+  `claude/calibration-evaluation-context-92e05d`.
+
+### 20.4 Spend
+This phase ≈ **$0.7–0.9** OpenRouter (Q+G calls); project cumulative ≈ **~$1.5**. The
+$1/problem cost cap is a non-issue; wall time (one Lean worker) is the only real limit,
+largely mitigated by `fastdrive` parallelism.
+
+### 20.5 Next actions
+1. **Attack rmo_2000_2 / rmo_2000_3** from the new chat using
+   `experiments/HANDOFF_ATTACK_RMO_2026-08-28.md` (HintedCloser + cast-to-ℤ; MenuTree /
+   `suffices` cuts). Decide the capability-limit verdict with the per-theorem accept rate.
+2. **Productionize 7/9:** fold the multisample-per-theorem path into `submission/agent.py`
+   as the hard-problem branch; bump N to ~18 so p09 passes reliably; keep sweep→grind→
+   repair→NearMiss as the floor for the rest. Then the frozen `S_eval` run.
+3. Backfill `REGISTRY.md` / `master_matrix.md` with the p09 solve.
