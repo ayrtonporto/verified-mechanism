@@ -1,0 +1,49 @@
+% ---------------------------------------------------------------------
+%  8. Limitations, holdout estimate, scope
+% ---------------------------------------------------------------------
+\section{Limitations, scope, and a holdout estimate}
+\label{sec:limits}
+
+I treat this as an exploratory study and state its boundaries plainly.
+\begin{itemize}
+  \item \textbf{Small $n$, single runs.} With $n=9$ and single-run cells, the
+        Part~Two totals are patterns, not decimals. A partial three-seed
+        replication confirmed the reliable four wins and showed the fifth
+        (\texttt{p10}) is stochastic under a tight cap; the same-budget router
+        baseline and full matrix variance were not completed, so I read the cells
+        as qualitative (complementarity, decisive same-model repair, unhelpful
+        handoff), not exact counts.
+  \item \textbf{No lift over an idealized router.} The integrated agent (5/9)
+        matches $\RQ\!\lor\!\RG$ (5/9); its advantage over a router is the free
+        tactic floor and one readable control path, not a higher ceiling. I do not
+        claim cross-model collaboration as the cause of the gain.
+  \item \textbf{Confounded solo-vs-repair.} Only the repair and handoff arms truly
+        share a code path and caps (the solo arms use the kit's multi-turn
+        baseline), so the solo-vs-repair contrast is useful but confounded.
+  \item \textbf{Hard wins are probabilistic.} The \texttt{p09} frontier win comes
+        from test-time sampling and is not reliable under full-caps scheduling; I
+        count it as substantively reached, not as a guaranteed point.
+  \item \textbf{The residual bank does not always assemble} (\S\ref{sec:frontier});
+        it is bounded, and no hard goal is claimed as reliably closed by it.
+  \item \textbf{Lab stress $\neq$ holdout.} The full16 measurement uses judge-class
+        caps but is my own sample suite. The kit ships sixteen sample problems; I
+        split them 9 (\Sdev) / 7 (\Seval) and tuned on \Sdev. Because the full16
+        stress touches all sixteen, I do not present \Seval{} as a clean untouched
+        holdout --- the private holdout remains the grader's.
+\end{itemize}
+
+\paragraph{Holdout estimate.} I expect roughly \textbf{6 of 12} on the private
+holdout. Both \Sdev{} (5/9) and the full16 lab suite (9/16) land near 56\,\%, and
+the easy-to-mid band transfers reliably; I discount confidence because the hard
+wins are stochastic and the private difficulty mix is unknown, so a plausible
+range is 5--7.
+
+\paragraph{External Lean tooling and reproducibility.} Premise-selection and
+search tools (LeanSearch, LeanDojo/ReProver-style indexes) are valuable on an open
+network but the judged runtime may contact only \nolinkurl{openrouter.ai} with the
+Lean container offline, so this agent uses none of them (the offline hint catalogue
+of \S\ref{sec:discussion} is the rules-compliant alternative). The submitted
+repository is the single source of truth: Appendix~\ref{app:runs} lists the run
+identifiers, per-problem spend, and artifact paths behind every table, and
+\texttt{scripts/judge\_check.sh} reproduces the one-problem contract from a clean
+clone.

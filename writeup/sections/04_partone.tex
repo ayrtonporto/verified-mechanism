@@ -1,0 +1,86 @@
+% ---------------------------------------------------------------------
+%  4. Results: the integrated agent (Part One)
+% ---------------------------------------------------------------------
+\section{Results: a Lean-gated portfolio}
+\label{sec:results}
+
+\subsection{The integrated agent on \Sdev}
+One policy, one pass, substantive throughout: the ladder scores \textbf{5/9}
+(Table~\ref{tab:sdev}). The five wins arrive at three different rungs --- the free
+tactic sweep, same-model Qwen repair, and same-model GPT repair --- for about
+forty cents total.
+
+\begin{table}[t]
+\centering
+\caption{Integrated agent on \Sdev, substantive (snapshot). Wins are cheap; the
+four hard problems run to \texttt{exhausted}. \texttt{p10}'s closing path is
+variable (\S\ref{sec:results}). Total $\approx$\,USD~0.41.}
+\label{tab:sdev}
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Problem & Closing rung & Wall (s) & USD \\
+\midrule
+p01\_linear         & T0 sweep     & 119 & 0.000 \\
+p05\_gcd\_mersenne   & T0 sweep     & 105 & 0.000 \\
+p03\_sq\_ge\_two\_ab & Qwen repair  & 138 & 0.000 \\
+p06\_pow\_mod        & Qwen repair  & 196 & 0.004 \\
+p10\_factorial\_pow  & GPT repair   & 387 & 0.009 \\
+\midrule
+\multicolumn{2}{@{}l}{4 hard problems --- \fail, exhausted}
+                     & 2000--3400 & 0.08--0.14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{It clears the solo baselines --- and where the gain comes from}
+On a substantive basis (Table~\ref{tab:matrix}), each vanilla solo model scores
+\textbf{3/9} and their union \textbf{4/9}; the integrated policy reaches
+\textbf{5/9}. The gain is real but I am precise about its cause. The extra points
+are \emph{not} evidence of cross-model collaboration --- they come from two
+non-conversational sources: (i) a free tactic sweep that closes easy goals at zero
+cost, and (ii) \emph{same-model} repair, which unlocks \texttt{p10} (a problem no
+solo configuration solves). Routing between the two models' repair arms captures
+their complementary wins in one policy.
+
+I state the honest ceiling of this claim plainly: the union of the two same-model
+repair arms, $\RQ\!\lor\!\RG$, also reaches 5/9. So the integrated agent does not
+beat an idealized router over those arms; what it adds over such a router is the
+free T0 floor and a single, readable control path. The defensible Part~One
+statement is therefore \emph{``a finite Lean-gated portfolio of tactics and
+same-model repair reaches 5/9, well above the 3/9 solos and 4/9 solo union,''} not
+``two models collaborate to beat one.'' A same-budget router over those two arms
+remains the right baseline to measure directly (\S\ref{sec:discussion}).
+
+\begin{table}[t]
+\centering
+\caption{Substantive scores on \Sdev. Raw comparator counts were higher for the
+GPT-side arms only because of a Putnam answer-set tautology the guard removes
+(\S\ref{sec:mechanism}, Appendix~\ref{app:transcripts}).}
+\label{tab:matrix}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+\SQ & \SG & \Uni ($\SQ\!\lor\!\SG$) & \RQ & \RG & \HQG & \HGQ & \textbf{Agent} \\
+\midrule
+3 & 3 & 4 & 4 & 4 & 3 & 2 & \textbf{5} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Compute sensitivity}
+Four of the five wins --- \texttt{p01}, \texttt{p03}, \texttt{p05}, \texttt{p06}
+--- close in under four minutes. The fifth, \texttt{p10}, is stochastic: it closed
+in 387\,s via same-model repair on the snapshot, but under a stricter twenty-minute
+validation cap it reached closure only through the slower slot fallback
+($\approx$17.5\,min), and sometimes timed out. It fits comfortably within the
+official eight-hour judge cap, so the full 5/9 holds under judging conditions; the
+twenty-minute runs are a stress test of the reliable core, not an alternative
+reading of the rules, and are one more instance of the theme that the system's
+harder wins are probabilistic (\S\ref{sec:frontier}).
+
+\subsection{Repeated at judge caps: full16}
+Under the judge's \$1/8\,h caps, a parallel run over all sixteen sample problems
+passed \textbf{9/16 substantive}, and it passed the \emph{same} nine on two
+independent nights (\texttt{p01}--\texttt{p08}, \texttt{p10}). Two matching runs
+are repetition, not a robustness estimate, but they show the score is not a single
+lucky draw. The seven that resist are the hard olympiad/Putnam tail; the next
+section shows how far into it the system reaches, and at what reliability.

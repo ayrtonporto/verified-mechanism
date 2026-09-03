@@ -1,0 +1,53 @@
+% ---------------------------------------------------------------------
+%  6. The hard frontier: sampling scale + the hollow-bank boundary
+% ---------------------------------------------------------------------
+\section{How far the frontier reaches}
+\label{sec:frontier}
+
+The integrated agent solves what is reliably solvable under caps. But ``reliably''
+is not the whole story: across configurations the system has produced verified,
+model-generated proofs for \textbf{6 of 9} development problems and \textbf{10 of
+16} sample problems --- reaching a genuine IMO multi-theorem problem. This section
+is honest about both how it gets there and where it stops.
+
+\subsection{Hard wins come from test-time sampling scale}
+\texttt{p09\_imo1964} is an IMO problem with a multi-theorem statement, and the
+system closed it substantively on a directed run: model-generated,
+comparator-clean, no hardcoding. The mechanism is test-time scale, not a cleverer
+prompt. Each sub-theorem is sampled independently many times (in that campaign,
+roughly one of ten samples passed per sub-theorem) and the accepted pieces are
+combined into one file.
+Sampling each theorem \emph{separately} breaks the conjunction that dooms a single
+long attempt: needing every sub-goal clean in the same generation is
+exponentially unlikely, but needing each clean in \emph{some} generation is
+cheap. This mirrors the transferable lesson from the wider literature --- with no
+fine-tuning, the lever is search and verification at inference time.
+
+It also explains an apparent paradox --- \emph{if the ladder solved \texttt{p09}
+once, why not every time?} These hard wins are \emph{probabilistic}: a one-in-ten
+per-sample rate makes the outcome depend on how much sampling the budget buys, and
+the integrated agent spreads its budget across every rung rather than pouring it
+into heavy per-theorem sampling. So \texttt{p09} is ``substantively solvable, not
+yet reliable,'' and the fix is a scheduling choice (\S\ref{sec:discussion}), not a
+missing capability.
+
+\subsection{The boundary: verified progress is not yet a proof}
+For the remaining hard problems I built the most literature-grounded idea
+available under the no-retrieval rule: instead of proving the whole theorem, mint
+small \emph{verified} lemmas and reuse them, accumulating a bank of checked
+partial progress. The bank works as a bank: on \texttt{rmo\_2000\_2} it saved
+several lemmas, reused most of them, and recorded genuinely \emph{decisive}
+reuses. What it does not do --- consistently --- is assemble those pieces into a
+proof of the locked goal. An overnight campaign on the hardest six problems
+finished with the bank filling, greedy assembly firing, and the target theorem
+still open.
+
+I call this the \textbf{hollow-bank boundary}: the system mints and reuses the
+verified ``screws'' but cannot always assemble the ``furniture.'' It names the
+failure precisely --- not proof \emph{generation}, which works, but goal-directed
+\emph{assembly} --- with verified evidence rather than a vague capability ceiling,
+and it is a boundary, not a wall: the same cheap ladder that stops here is the one
+that reaches \texttt{p09}. (For completeness, \texttt{rmo\_2000\_2} is
+\emph{reachable} by a hand-built cast-and-squeeze proof, deliberately kept out of
+the agent since the rules forbid per-problem hardcoding; the open question is
+whether the models rediscover the idiom through the generic sampling interface.)

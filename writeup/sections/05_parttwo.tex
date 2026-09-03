@@ -1,0 +1,90 @@
+% ---------------------------------------------------------------------
+%  5. Part Two: the science (handoff negative result is the headline)
+% ---------------------------------------------------------------------
+\section{Part Two: which cooperation actually pays}
+\label{sec:parttwo}
+
+Varying only the roles gives the per-problem picture in Table~\ref{tab:perproblem}.
+I read it as exploratory evidence ($n=9$, single runs). A partial three-seed
+replication of the integrated agent reproduced the reliable core and confirmed
+that the fifth win is stochastic (\S\ref{sec:results}); the same-budget router
+baseline and the full seeded matrix were not completed, so these cells stand as
+single-run patterns rather than pass-rates.
+
+\begin{table}[t]
+\centering
+\caption{Per-problem substantive outcomes on \Sdev{} (a dot is a substantive
+pass). The \texttt{putnam\_2018\_a1} row is shown separately: its GPT-side
+comparator ``passes'' are the answer-set tautology of \S\ref{sec:mechanism} and are
+not substantive, so they do not enter the totals. All nine \Sdev{} problems are
+listed; an empty row is an all-condition failure.}
+\label{tab:perproblem}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+Problem & \SQ & \SG & \RQ & \RG & \HQG & \HGQ \\
+\midrule
+p01\_linear         & $\bullet$ & $\bullet$ & $\bullet$ & $\bullet$ & $\bullet$ & $\bullet$ \\
+p03\_sq\_ge\_two\_ab & $\bullet$ & $\bullet$ & $\bullet$ & $\bullet$ & $\bullet$ & $\bullet$ \\
+p05\_gcd\_mersenne   &           & $\bullet$ &           & $\bullet$ &           &           \\
+p06\_pow\_mod        & $\bullet$ &           & $\bullet$ &           & $\bullet$ &           \\
+p10\_factorial\_pow  &           &           & $\bullet$ & $\bullet$ &           &           \\
+p09\_imo1964         &           &           &           &           &           &           \\
+rmo\_2000\_2         &           &           &           &           &           &           \\
+rmo\_2000\_3         &           &           &           &           &           &           \\
+\midrule
+\textbf{Substantive /9} & \textbf{3} & \textbf{3} & \textbf{4} & \textbf{4} & \textbf{3} & \textbf{2} \\
+\midrule
+putnam\_2018\_a1 (comparator only) & & $\circ$ & & $\circ$ & $\circ$ & $\circ$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Finding 1 --- the models are complementary}
+Their easy wins overlap; their harder wins do not. Among the model-driven arms,
+\texttt{p06} is solved only on the Qwen side and \texttt{p05} only on the GPT side.
+(In the integrated agent \texttt{p05} is closed even more cheaply, by the tactic
+sweep, before any model runs; the complementarity here is a statement about the
+two \emph{models}, read from the model-only arms.) Because the failures are
+complementary, the derived Solo Union reaches 4/9 with no cross-model protocol,
+and the cheapest correct move is to \emph{route} rather than merge.
+
+\subsection{Finding 2 --- same-model repair supplies the margin}
+Feeding the failed proof and the exact Lean messages back to the \emph{same} model
+is what lifts the score above the union: both repair arms unlock
+\texttt{p10\_factorial\_pow}, which no solo or handoff arm solves. That one problem
+is the difference between the 4/9 union and the 5/9 portfolio. Compiler-in-the-loop
+repair is the real lever --- and note it requires only \emph{one} model.
+
+\subsection{Finding 3 (the headline, and it is negative) --- cross-model handoff
+does not pay}
+The intuitive hypothesis of the whole exercise is that two models cooperating ---
+one repairing the other --- beat one model alone. On these two models, \emph{it
+does not.} \HQG{} (Qwen proposes, GPT repairs) scores 3/9 and adds no problem that
+same-model repair did not already solve. \HGQ{} (GPT proposes, Qwen repairs) is the
+\emph{worst} arm at 2/9, and it \emph{loses} \texttt{p05} --- a problem GPT-OSS
+solves alone: routing GPT's working proposal through Qwen for repair destroyed a
+capable trajectory. And in the integrated agent's five wins, \emph{none} came from
+a handoff rung.
+
+This is a clean negative result, and I think it is the most useful thing in
+Part~Two. The mechanism is intuitive: a second model does not share the first's
+plan, so it tends to ``repair'' by rewriting toward its own approach, discarding a
+trajectory that was nearly closed. Same-model repair preserves the plan; cross-
+model repair breaks it. The design consequence is wired into the ladder: run
+same-model champions first, and keep cross-model handoff only as a late, seeded
+step --- never as a default.
+
+\subsection{Failure taxonomy}
+Classifying the \Sdev{} failures into the task's four categories
+(Appendix~\ref{app:failtax}) shows the bottleneck is formalization and stuck
+repair, not incorrect informal reasoning or harness errors: \texttt{p09} and
+\texttt{rmo\_2000\_2} are stuck-repair near-misses (both are reachable in
+principle), \texttt{rmo\_2000\_3} fails formalization outright, and
+\texttt{putnam\_2018\_a1} produces only guard-rejected tautologies.
+
+\subsection{Verification is part of the science}
+The excluded Putnam row is not a footnote. Without a statement lock, a model earns
+a comparator ``pass'' by redefining the answer set to be the question itself
+(\S\ref{sec:mechanism}); the tautology lands on the GPT-side arms, so counting it
+would inflate both parts of this study and even distort Finding~1. Guarding against
+it is what makes the rest of the numbers trustworthy.

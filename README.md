@@ -28,10 +28,22 @@ Rungs run cheapest-first — a zero-model tactic sweep, then same-model repair
 champions (Qwen, then GPT-OSS), then a seeded cross-model handoff, then an
 independent slot/combine fallback, then bounded program/bridge and residual
 lemma-banking stages. A strict integrity and anti-tautology guard admits only
-substantive proofs. `experiments_agents/` holds the coordination components the
-agent imports plus the Part-Two science arms; it is development scaffolding
-alongside the graded ladder. The accompanying PDF write-up explains the method
-and the empirical study.
+substantive proofs. The accompanying PDF write-up explains the method and the
+empirical study.
+
+**Graded execution path.** The judged entrypoint reaches only these modules:
+
+- `submission/agent.py` — the finite ladder (entrypoint).
+- `experiments_agents/`: `common`, `repair`, `hintedprover`, `nearmiss`,
+  `nm_pf`, `multitheorem`, `bridgeportfolio`, `programportfolio`,
+  `verified_progress`, `error_router`, `residual_hygiene`, `candidate_guard`.
+- `src/re_harness/` (kit runtime; only `worker.py` is modified, to inject a
+  reserved `__manifest__` used by the acceptance guard).
+
+Everything else under `experiments_agents/` (the six Part-Two science arms and
+exploratory prototypes) and the extra `tests/` are **development scaffolding not
+executed by the graded entrypoint**, kept for reproducibility of the Part-Two
+study.
 
 **LLM tools.** Coding assistants (Claude Code / Codex-class) were used for
 scaffolding, debugging, and drafting; runtime solving uses only the two mandated
@@ -169,13 +181,12 @@ for controlled experiments with `BP_MAX_DEPTH`, `BP_PORTFOLIO_CALLS`,
 `BP_ROUTES_PER_CALL`, `BP_MAX_ROUTES_CHECKED`, `BP_MAX_ROUTES_TRIED`, `BP_MAX_LEMMAS`,
 `BP_Q_ATTEMPTS`, `BP_G_ATTEMPTS`, `BP_CHECK_TIMEOUT_S`, and `BP_MIN_TIME_S`.
 
-The latest homogeneous closure test and its limitations are recorded in
-`experiments/BRIDGEPORTFOLIO_PROGRAM_KNOWN7_REPORT_2026-08-29.md`. Its comparator score
-was 4/7, but only 3/7 were substantive proofs because the Putnam definition made the
-downstream theorem tautological. Treat definition non-circularity and preservation of the
-previous solver's time budget as required gates, not optional scoring refinements. The
-next implementation brief is
-`../experiments/HANDOFF_REGRESSION_FIRST_VERIFIED_LEMMAS_2026-08-29.md`.
+An earlier homogeneous closure test scored 4/7 by the comparator but only 3/7
+substantive, because a Putnam answer-set definition made the downstream theorem
+tautological. Definition non-circularity and preservation of the previous solver's
+time budget are therefore treated as required acceptance gates, not optional
+scoring refinements — enforced by the guard in
+`experiments_agents/candidate_guard.py`.
 
 The baseline can be configured with:
 

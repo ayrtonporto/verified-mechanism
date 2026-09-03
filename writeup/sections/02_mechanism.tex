@@ -1,0 +1,105 @@
+% ---------------------------------------------------------------------
+%  2. Mechanism: Lean-gated coordination (Part One design)
+% ---------------------------------------------------------------------
+\section{Mechanism: Lean-gated coordination}
+\label{sec:mechanism}
+
+\subsection{Design principle: Lean at every step, not only at the end}
+The comparator judges once. My system uses Lean far more often than that: the
+unit of work is a loop, not a single generation.
+\[
+\text{candidate}
+\;\xrightarrow{\text{Lean}}\;
+\text{structured diagnostic}
+\;\xrightarrow{\text{model}}\;
+\text{repair}
+\;\xrightarrow{\text{Lean}}\;
+\cdots
+\]
+Every candidate is compiled against a clean Mathlib environment; the service
+returns typed messages, a sorry flag, and timing. Those messages --- not a
+model's opinion of its own proof --- decide what happens next. The consequence I
+rely on throughout: \textbf{cross-model coordination happens over the compiler's
+output, never over prose.} When a stuck proof passes from one model to the other,
+it carries the failed candidate plus the exact Lean error, and the second model
+is asked to repair. There is no natural-language debate between agents, because a
+Lean diagnostic is a stronger, cheaper, and more objective signal than one model
+critiquing another in English. Three invariants hold at every rung: no sorry or
+admit, no new axioms, and no silent rewriting of the theorem statement --- so
+that ``Lean accepted it'' means to me what it will mean to the grader.
+
+\subsection{A finite escalation ladder}
+The agent is a \emph{finite} ladder. Success returns immediately; on failure the
+next rung runs until it stalls, hits its cap, or the ladder is exhausted. The
+order is deliberate --- cheapest and most reliable first, most expensive and most
+speculative last (Figure~\ref{fig:ladder}):
+
+\begin{enumerate}
+  \item \textbf{T0 --- tactic sweep.} Zero-model closing tactics on the locked
+        challenge. Free wins on easy goals, no API spend.
+  \item \textbf{Same-model repair champions (Qwen, then GPT-OSS).} One model
+        proposes, Lean checks, the \emph{same} model repairs from the failed
+        proof and the exact messages, under a turn budget.
+  \item \textbf{Seeded cross-model handoff.} The best failed Qwen candidate is
+        repaired by GPT-OSS, and vice versa --- carrying the Lean context
+        forward, not restarting.
+  \item \textbf{Independent slot / whole fallback.} Split the file into locked
+        declarations, sample and repair each, recombine under a strict integrity
+        check. This is where cheap multi-sampling pays off, and where hard
+        multi-theorem problems tend to fall.
+  \item \textbf{Bounded program/bridge experiment}, then a \textbf{residual
+        lemma-banking stage} (\S\ref{sec:frontier}) if wall remains.
+  \item \textbf{Stop} --- accept, stall, or exhausted.
+\end{enumerate}
+
+The ladder is the design thesis made concrete: it starts from ``less'' (a free
+tactic sweep) and escalates to ``more'' only as the problem resists, and it never
+averages the two models --- it \emph{routes} between them and lets Lean
+adjudicate each step. This routing is exactly what lets one policy collect wins
+that are otherwise split across the two models (\S\ref{sec:results}).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=4pt,
+              minimum height=0.72cm},
+  arr/.style={-{Latex}, thick}
+]
+\node[box, fill=black!6]   (t0)  {T0\\ sweep};
+\node[box, right=0.32cm of t0, fill=linknavy!12] (rq) {repair\\ Qwen};
+\node[box, right=0.32cm of rq, fill=linknavy!12] (rg) {repair\\ GPT};
+\node[box, right=0.32cm of rg, fill=orange!16]   (h)  {handoff\\ Q$\leftrightarrow$G};
+\node[box, right=0.32cm of h,  fill=green!14]    (fb) {slot\\ fallback};
+\node[box, below=0.55cm of rg, fill=yellow!22]   (exp){program /\\ bridge};
+\node[box, right=0.5cm of exp, fill=red!10]      (res){residual\\ banking};
+\node[box, right=0.5cm of res, fill=black!5]     (stop){accept /\\ exhausted};
+\draw[arr] (t0) -- (rq);
+\draw[arr] (rq) -- (rg);
+\draw[arr] (rg) -- (h);
+\draw[arr] (h)  -- (fb);
+\draw[arr] (fb.south) -- ++(0,-0.24cm) -| (exp.north);
+\draw[arr] (exp) -- (res);
+\draw[arr] (res) -- (stop);
+\end{tikzpicture}
+\caption{The finite coordination ladder. Lean accepts or rejects at every rung;
+cheap and reliable rungs run first. Residual banking is post-ladder spend, not
+the spine.}
+\label{fig:ladder}
+\end{figure}
+
+\subsection{Acceptance hygiene, and why it is a feature}
+A proof accepted by a warm REPL during search is not automatically a proof I
+submit. Every final candidate passes a \textbf{strict integrity} guard:
+declaration signatures are immutable up to the proof body, answer shapes and
+numeric values are checked against the locked problem, and known circular tricks
+are rejected. This matters more than it sounds. A model can ``solve'' a Putnam
+answer-set problem by \emph{redefining the answer set to be the question} --- for
+\texttt{putnam\_2018\_a1}, declaring the solution set to be exactly the pairs
+satisfying the left-hand side, so the required equivalence collapses to a
+reflexivity and the comparator accepts a proof that establishes nothing. My guard
+infers the answer shape from the challenge and rejects such
+set-builder / $\lambda$-plus-reflexivity tautologies. I therefore report
+\emph{substantive} passes only. Everything counted in this report is a proof of
+the actual statement --- a stricter and more defensible bar than raw comparator
+acceptance, and the reason my headline numbers hold up when they are re-run.

@@ -1,0 +1,91 @@
+% =====================================================================
+%  Verified Mechanisms -- Research Engineer take-home
+%  Writeup (Part One + Part Two). Graded artifact: this PDF.
+%  Body: 1-10 pages; appendix unlimited.
+%
+%  Draft v2 -- modular. Each chapter lives in sections/*.tex.
+%  Compile:  tectonic -X compile main.tex
+% =====================================================================
+\documentclass[11pt]{article}
+
+% ---- encoding / fonts ----
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ---- layout ----
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.4em}
+\setlength{\parskip}{0.38em}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{2em}
+
+% ---- math ----
+\usepackage{amsmath,amssymb}
+
+% ---- tables / figures ----
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+% ---- color / links ----
+\usepackage{xcolor}
+\definecolor{linknavy}{RGB}{20,55,110}
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=linknavy,citecolor=black]{hyperref}
+\hypersetup{
+  pdftitle={Lean as the Coordination Signal},
+  pdfauthor={Ayrton Porto}
+}
+
+% ---- tikz for the ladder figure ----
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+
+% =====================================================================
+%  Notation macros -- keep arm names consistent everywhere
+% =====================================================================
+\newcommand{\SQ}{\textsf{S-Q}}     % Qwen solo
+\newcommand{\SG}{\textsf{S-G}}     % GPT-OSS solo
+\newcommand{\RQ}{\textsf{R-Q}}     % Qwen self-repair
+\newcommand{\RG}{\textsf{R-G}}     % GPT-OSS self-repair
+\newcommand{\HQG}{\textsf{H-QG}}   % handoff Qwen -> GPT
+\newcommand{\HGQ}{\textsf{H-GQ}}   % handoff GPT -> Qwen
+\newcommand{\Uni}{\textsf{U}}      % derived solo union
+\newcommand{\Sdev}{\textsf{S\_dev}}
+\newcommand{\Seval}{\textsf{S\_eval}}
+\newcommand{\qwen}{\texttt{qwen3.5-flash}}
+\newcommand{\gptoss}{\texttt{gpt-oss-120b}}
+\newcommand{\pass}{\textsc{pass}}
+\newcommand{\fail}{\textsc{fail}}
+
+% =====================================================================
+\title{\bfseries Lean as the Coordination Signal:\\[0.2em]
+\large A Finite Repair Ladder for Qwen\,$+$\,GPT-OSS Proof Search}
+\author{Ayrton Porto\\
+\small Research Engineer take-home --- Verified Mechanisms}
+\date{2 September 2026}
+
+\begin{document}
+\maketitle
+
+\input{sections/00_abstract}
+\input{sections/01_intro}
+\input{sections/02_mechanism}
+\input{sections/03_setup}
+\input{sections/04_partone}
+\input{sections/05_parttwo}
+\input{sections/06_residual}
+\input{sections/07_discussion}
+\input{sections/08_limitations}
+\input{sections/09_conclusion}
+
+\clearpage
+\appendix
+\input{sections/A_appendix}
+
+\end{document}

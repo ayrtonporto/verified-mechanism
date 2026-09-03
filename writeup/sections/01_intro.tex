@@ -1,0 +1,65 @@
+% ---------------------------------------------------------------------
+%  1. Introduction & task
+% ---------------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{The task}
+The take-home has two graded parts. \textbf{Part~One} asks for a coordination
+layer that makes two fixed models --- Qwen (\nolinkurl{qwen/qwen3.5-flash-02-23})
+and GPT-OSS (\nolinkurl{openai/gpt-oss-120b}), both via OpenRouter --- solve math
+problems and prove the answers in Lean~4. Scoring is mechanical: on a private
+holdout of roughly a dozen problems, a problem earns one point iff its Lean file
+passes the open-source comparator, and a simple design that can be fully
+understood is explicitly preferred over a complex one that scores marginally
+better. \textbf{Part~Two} asks the scientific question: does the collaboration
+beat either model alone, on which problems, and what does one model contribute
+that the other lacks --- reported per problem, with a failure taxonomy, transcript
+case studies, confounds, a spend ledger, and a holdout estimate.
+
+I follow the judging conditions stated in the task brief and \texttt{RULES.md}:
+\$1 and eight hours of wall-clock per problem, enforced by the grader's runner.
+Separately, I used a stricter twenty-minute cap in part of the validation campaign
+to test whether the reliable core survives under substantially less compute
+(\S\ref{sec:results}). The runtime is narrow: only
+\nolinkurl{openrouter.ai} and only the two model IDs; no web tools, no retrieval,
+no variants. The Lean container runs offline, and the graded entrypoint is a
+single agent module.
+
+\subsection{Approach: from zero, incrementally, against the literature}
+I was the sole applicant and began without a preferred architecture to defend
+(coding assistants were used for scaffolding and editing, disclosed in
+Appendix~\ref{app:llm}). My background was \emph{autoformalization}, not
+AI-for-theorem-proving, so the starting point was a blank sheet, and I built from
+less to more: start with the cheapest thing that
+can work, measure it, and add a mechanism only when failures demand it --- checking
+each against what already exists (compiler-in-the-loop repair, draft--sketch--prove,
+premise selection, lemma banking) to avoid reinventing it blindly. Two early
+observations shaped everything: these models are cheap to call, so sampling and
+combining candidates was economical from the start; and Lean's feedback is a better
+coordination medium than natural language, because a compiler error is compact,
+objective, and model-agnostic, whereas two chat models that ``debate'' in prose
+mostly flatter each other.
+
+\subsection{What I found}
+Every figure below is \emph{substantive} --- it survives an anti-tautology guard
+(\S\ref{sec:mechanism}) --- and I treat the study as exploratory ($n=9$, single
+runs of stochastic models).
+\begin{itemize}
+  \item \textbf{A Lean-gated portfolio clears the solos.} One integrated policy,
+        \textbf{5/9} on the development set, against 3/9 for each vanilla solo and
+        4/9 for their union (\S\ref{sec:results}).
+  \item \textbf{The cause is repair and routing, not cross-model handoff.} The
+        added points come from structured same-model repair over complementary
+        strengths; handing one model's proof to the other added no win and
+        sometimes hurt --- a clean negative result (\S\ref{sec:parttwo}).
+  \item \textbf{The frontier is wider than the reliable core.} Across
+        configurations the system has verified model-generated proofs for
+        \textbf{6/9} development and \textbf{10/16} sample problems, including an
+        IMO problem reached by test-time sampling scale --- probabilistically
+        (\S\ref{sec:frontier}).
+  \item \textbf{It repeats at judge caps.} A full-caps stress run passed the same
+        \textbf{9/16} on two independent nights (\S\ref{sec:results}).
+\end{itemize}
+Source, transcripts, and run artifacts are in the accompanying repository; exact
+run identifiers and spend are in Appendix~\ref{app:runs}.

@@ -1,0 +1,55 @@
+% ---------------------------------------------------------------------
+%  7. Discussion: when cooperation helps + improvements
+% ---------------------------------------------------------------------
+\section{Discussion: when does cooperation help?}
+\label{sec:discussion}
+
+The study gives a specific answer, and part of it is a clean ``not here.''
+
+\textbf{Routing over complementary strengths helps.} The two models fail on
+different problems (Finding~1), so a portfolio that tries the free tactics, then
+one model's repair, then the other's, captures the union of their abilities in one
+policy --- which is why the integrated agent (5/9) clears the vanilla solos (3/9)
+and their union (4/9).
+
+\textbf{Same-model repair helps.} Feeding a model its own failed proof plus the
+exact Lean diagnostic is the lever that unlocks \texttt{p10} and supplies the
+margin above the union (Finding~2). Notably, this needs only one model at a time.
+
+\textbf{Cross-model handoff does not help, and can hurt.} This is the negative
+result of Finding~3: handing one model's proof to the other for repair added no
+win and, on \texttt{p05}, destroyed one. The honest conclusion is that the value in
+this system comes from \emph{verification and routing}, not from the two models
+repairing each other. I keep handoff in the ladder only as a late, seeded,
+low-cost step, because on a different problem distribution it might occasionally
+help --- but on this evidence it is a residual tool, not the point.
+
+\textbf{On the hard tail, capability comes from search, not conversation.} The
+\texttt{p09} win is test-time sampling scale (\S\ref{sec:frontier}); the
+hollow-bank boundary shows coordination cannot conjure an assembled proof from
+verified fragments when neither model can direct the assembly. Cooperation
+reallocates and repairs capability; scale extends it; neither invents it.
+
+\subsection{Improvements the results point to}
+Each failure names a next step, all within the two-model, no-retrieval constraint:
+\begin{itemize}
+  \item \textbf{Measure the router baseline.} The most important open comparison is
+        a same-budget policy that only routes between the two same-model repair
+        arms ($\RQ\!\lor\!\RG$). If it ties the full ladder, the honest story is
+        ``routing + free tactics,'' and the ladder should shed anything that does
+        not earn its wall.
+  \item \textbf{Budget the hard wins on purpose.} \texttt{p09} is solvable when
+        enough sampling is aimed at it; a scheduler that detects a multi-theorem
+        statement and front-loads per-theorem sampling would convert a
+        probabilistic win into a reliable one.
+  \item \textbf{Goal-shaped lemma selection and forced assembly.} The hollow bank
+        fails at assembly, not generation; selecting lemmas by how they unify with
+        the remaining goal, and ending each round with a mandatory full-bank close,
+        attacks the actual bottleneck.
+  \item \textbf{An offline hint catalogue.} Runtime retrieval is disallowed, but a
+        small, generic, problem-agnostic tactic/lemma catalogue baked in before the
+        network lock would give the fallback stronger closing moves without
+        breaking the rules.
+\end{itemize}
+None of these needs a larger model or a new modality; each attacks a failure this
+study exhibited.

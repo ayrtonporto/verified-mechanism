@@ -1,0 +1,32 @@
+% ---------------------------------------------------------------------
+%  Abstract -- honest causal framing: portfolio+repair beats solos;
+%  cross-model handoff is a studied negative result.
+% ---------------------------------------------------------------------
+\begin{abstract}
+\noindent
+I make two fixed chat models --- \nolinkurl{qwen/qwen3.5-flash-02-23} and
+\nolinkurl{openai/gpt-oss-120b} --- cooperate to produce Lean~4 proofs, and I
+report honestly on \emph{which} form of cooperation actually pays. The design
+principle is that \emph{Lean is a coordination signal at every step, not only the
+final judge}: each candidate is compiled, its structured diagnostics drive a
+repair, and any cross-model handoff is seeded with the exact compiler message
+rather than free prose. The mechanism is a small, finite escalation ladder ---
+free tactics, then same-model repair, then a seeded handoff, then a combining
+fallback --- that returns on the first accepted proof. Every reported number is
+\emph{substantive}: it survives an anti-tautology guard that rejects the circular
+``restate-the-answer'' proofs a permissive checker accepts. On the frozen
+nine-problem development set the integrated policy scores \textbf{5/9 substantive},
+against \textbf{3/9} for each vanilla solo model and \textbf{4/9} for their union.
+The controlled solo/repair/handoff matrix locates the cause: the added points come
+from \emph{structured same-model repair and portfolio routing over complementary
+strengths}, not from cross-model handoff. Indeed my clearest Part~Two finding is
+\emph{negative} and useful: handing one model's proof to the other for repair
+added no win and, in one case, destroyed a proof a single model would have found
+alone. Verification and routing --- not model-versus-model debate --- are the
+mechanism the data support. Beyond the reliable core, the system reaches a genuine
+IMO multi-theorem problem through test-time sampling scale (probabilistically, not
+reliably), and I characterize precisely where the frontier stops: a residual stage
+mints and reuses \emph{verified} lemmas but does not always assemble the hard goal.
+I treat the study as exploratory ($n=9$, stochastic models) and report per-problem
+outcomes, a failure taxonomy, transcripts, a spend ledger, and a holdout estimate.
+\end{abstract}

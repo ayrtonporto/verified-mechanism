@@ -1,0 +1,152 @@
+% ---------------------------------------------------------------------
+%  Appendices (do not count toward the 10-page body limit)
+% ---------------------------------------------------------------------
+
+\section{Transcript case studies}
+\label{app:transcripts}
+
+\paragraph{Case 1 --- the Putnam answer-set tautology (verbatim).}
+On \texttt{putnam\_2018\_a1} (characterize the pairs $(a,b)$ with
+$1/a+1/b=3/2018$) a model earns a comparator ``pass'' without proving anything, by
+redefining the answer set to be the question:
+\begin{quote}\small\ttfamily
+abbrev solution : Set (\ensuremath{\mathbb{Z}}\,\ensuremath{\times}\,\ensuremath{\mathbb{Z}}) := \{p | 1/p.1 + 1/p.2 = 3/2018\}\\
+theorem putnam\_2018\_a1 \dots : (1/a + 1/b = 3/2018) \ensuremath{\leftrightarrow} (\ensuremath{\langle}a,b\ensuremath{\rangle} \ensuremath{\in} solution) := by rfl
+\end{quote}
+The equivalence collapses to reflexivity; the six real solution pairs are never
+established and the statement is silently replaced. A second observed variant
+substitutes an outright wrong finite set. The guard infers the answer shape from
+the challenge and rejects both, which is why the agent ``fails'' Putnam on
+guarded runs --- the guard is working, and no real proof was lost. (Exhibit:
+\texttt{evidence/putnam\_2018\_a1\_tautology.lean}.)
+
+\paragraph{Case 2 --- same-model repair vs.\ cross-model handoff on the same
+problem.} The positive and negative findings share one exhibit. In \RG,
+\texttt{p10\_factorial\_pow} is closed when GPT-OSS receives its own failed
+candidate plus the exact Lean diagnostic (an unproven upper-bound obligation for
+$n>k$) and repairs the induction --- a same-model loop. In \HGQ,
+\texttt{p05\_gcd\_mersenne}, which GPT-OSS proves alone, is \emph{lost} when
+GPT's proposal is routed to Qwen: Qwen's repair rewrites toward a different
+approach and abandons the near-closed trajectory. Both exchanges are described from run
+metadata in \texttt{evidence/transcript\_notes.md}; the working GPT proof of
+\texttt{p05} is at \texttt{evidence/p05\_gcd\_mersenne\_working.lean}.
+
+\section{Failure taxonomy on \Sdev}
+\label{app:failtax}
+
+\begin{table}[h]
+\centering
+\caption{Substantive failures classified into the task's four categories.
+``Formalization'' = a correct informal idea that would not compile; ``stuck
+repair'' = a near-miss proof the models could not close under budget.}
+\begin{tabular}{@{}lp{7.2cm}@{}}
+\toprule
+Problem & Dominant failure mode \\
+\midrule
+p09\_imo1964     & Stuck repair (solvable by sampling scale; not under this run's per-rung budget) \\
+rmo\_2000\_2     & Stuck repair (reachable by hand; models did not rediscover the cast-and-squeeze idiom) \\
+rmo\_2000\_3     & Failed formalization / stuck repair (no accepted sub-proof) \\
+putnam\_2018\_a1 & Correct target, but only tautological ``proofs'' produced; rejected by the guard \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Spend ledger}
+\label{app:ledger}
+
+Per-problem spend for the integrated-agent snapshot on \Sdev{}
+(Table~\ref{tab:ledger}), and campaign totals. All figures are OpenRouter
+\texttt{usage.cost}; no problem approached the \$1 cap.
+
+\begin{table}[h]
+\centering
+\caption{Integrated agent, \Sdev{} snapshot (measurement caps \$0.20/1\,h).}
+\label{tab:ledger}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Problem & USD & Wall (s) \\
+\midrule
+p01\_linear & 0.000 & 119 \\
+p03\_sq\_ge\_two\_ab & 0.000 & 138 \\
+p05\_gcd\_mersenne & 0.000 & 105 \\
+p06\_pow\_mod & 0.004 & 196 \\
+p10\_factorial\_pow & 0.009 & 387 \\
+p09\_imo1964 & 0.136 & 2111 \\
+rmo\_2000\_2 & 0.102 & 3392 \\
+rmo\_2000\_3 & 0.077 & 1948 \\
+putnam\_2018\_a1 & 0.083 & 2062 \\
+\midrule
+\textbf{Total} & \textbf{0.411} & \textbf{10\,458} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Campaign totals: S/R/H development matrix $\approx$\,USD~0.33; integrated-agent
+snapshot USD~0.41; each full16 judge-caps night $\approx$\,USD~1.7 (16 problems,
+\$1 max each); directed \texttt{p09} pilot $\approx$\,USD~0.25. Cumulative project
+spend stayed well inside the provided budget; the binding constraint on hard
+problems was wall-clock, not dollars.
+
+\section{Judge-caps stress: full16, two nights}
+\label{app:full16}
+
+Under the judge's \$1/8\,h caps, a parallel run over all sixteen sample problems
+passed \textbf{9/16 substantive} on two independent nights, the same nine each
+time (\texttt{p01}--\texttt{p08}, \texttt{p10}). The seven that resist are the hard
+tail (\texttt{p09}; \texttt{rmo\_2000\_2/3/6}, \texttt{rmo\_2001\_2};
+\texttt{putnam\_2018\_a1}, \texttt{putnam\_2020\_a2}). Across all configurations
+\texttt{p09} has been closed substantively (\S\ref{sec:frontier}), a frontier of
+10/16 on this suite. Both nights show the residual bank saving and reusing
+verified lemmas on the RMO problems without assembling the locked goal --- the
+hollow-bank boundary in practice.
+
+\section{Run identifiers and artifacts}
+\label{app:runs}
+
+Redacted summary artifacts and the exhibits cited above are committed under
+\texttt{evidence/}. Full raw run artifacts (\texttt{result.json},
+\texttt{transcript.json}, \texttt{events.jsonl}) are excluded for size and may
+contain unnecessary model content; they are retained by the author and available
+on request. Each table's immutable run identifiers are listed for traceability:
+\sloppy
+\begin{itemize}
+  \item S/R/H development matrix: registry \texttt{Mx-*-Sdev}, runs
+        \texttt{20260826T*Z}, fixed-kit commit family \texttt{7baca49}.
+  \item Integrated-agent snapshot (\Sdev, 5/9): \texttt{20260830T010258Z} under
+        \texttt{outputs/sdev-snapshot/}.
+  \item full16 judge-caps nights (9/16): \texttt{20260830T050459Z} and
+        \texttt{20260901T151104Z} under \texttt{outputs/full16-*/}.
+  \item Directed \texttt{p09} pilot (PASS at \texttt{independent\_slot\_fallback},
+        empty bank): \texttt{20260831T061555Z}.
+  \item Partial validation campaign (three-seed agent replication; router baseline
+        and full seeded matrix not completed) under \texttt{outputs/validation/};
+        gate \texttt{away/validation\_gate\_2026-09-02.md}.
+\end{itemize}
+
+\section{Kit changes declared}
+\label{app:kit}
+
+I inject a small manifest of theorem/definition/numeric names into problem
+metadata so the acceptance guards can lock the problem shape, and I keep local,
+harder-locked copies of the two Putnam fixtures plus a corrected constant in one
+RMO fixture for lab use. The comparator and scoring logic are untouched; full
+diffs are in the repository README.
+
+\section{Repository map}
+\label{app:repo}
+
+The submission is a single agent module implementing the required interface. The
+development harness, the six Part~Two arms, the repair core, the slot-combine and
+sampling machinery, the residual lemma bank, and the acceptance guards live
+alongside it, each in its own directory, with the human-readable experiment
+registry and split. The shipped agent is the readable ladder of
+\S\ref{sec:mechanism}; the wider inventory is development scaffolding, not the
+graded policy.
+
+\section{LLM tools used for development and writeup}
+\label{app:llm}
+
+Development and writeup used coding assistants and chat models (Claude Code /
+Codex-class) for scaffolding, debugging, and drafting. Runtime solving uses only
+the two mandated OpenRouter models. The same disclosure is provided in the
+submission form.

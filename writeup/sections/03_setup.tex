@@ -1,0 +1,53 @@
+% ---------------------------------------------------------------------
+%  3. Experimental setup
+% ---------------------------------------------------------------------
+\section{Experimental setup}
+\label{sec:setup}
+
+\subsection{Problems and split}
+The kit ships sixteen sample problems in the holdout's format. I froze a
+development set \Sdev{} ($n=9$) for tuning and an evaluation set \Seval{} ($n=7$),
+and report Part~Two science on \Sdev. \Sdev{} spans easy algebra, number-theoretic
+identities, and hard olympiad/Putnam statements, so a single number never hides
+the difficulty spread.
+
+\subsection{The metric: substantive, not merely accepted}
+I track two signals and never conflate them:
+\begin{itemize}
+  \item \textbf{Comparator pass} --- the Lean file is accepted by the open-source
+        comparator. This is the mechanical quantity the grader scores.
+  \item \textbf{Substantive} --- the pass also proves the \emph{actual} statement,
+        surviving the integrity and anti-tautology guards
+        (\S\ref{sec:mechanism}). A pass that only restates the goal does not
+        count.
+\end{itemize}
+\textbf{Every headline number in this report is substantive.} This is a stricter
+bar than the task requires, and I adopt it on purpose: it is the only count that
+survives an independent re-run with a statement-locked comparator, and it is what
+separates a real result from an inflated one.
+
+\subsection{Caps}
+The judge enforces \$1 and 8\,h per problem. A few development-matrix runs use
+tighter measurement caps so a full sweep fits a small budget; the judge-caps
+stress run in \S\ref{sec:results} uses the full \$1/8\,h. Because a repair turn
+costs a fraction of a cent, the binding constraint on hard problems was
+wall-clock, not the dollar cap --- which is why the ladder can afford a free
+sweep, sampled candidates, and a combine step before the expensive residual stage.
+
+\subsection{Part~Two conditions}
+To ask whether collaboration beats solo, I hold the code path and caps fixed and
+vary only the roles: \SQ/\SG{} (each model solo, on the kit's existing multi-turn
+Lean-repair baseline), \RQ/\RG{} (explicit propose/repair, same model), and
+\HQG/\HGQ{} (cross-model handoff, each direction). Two points of hygiene. The solo
+conditions use the kit's real repair baseline --- I do \emph{not} redefine
+``solo'' as a weaker single shot to flatter collaboration. And the \emph{Solo
+Union} $\Uni = \SQ \lor \SG$ is \emph{derived}, not a run: it is the natural
+non-collaborative baseline any coordination layer must beat to justify itself.
+
+\subsection{Confounds, stated once}
+So the results read as prose, the caveats live here: solo baselines sometimes had
+more turns than the repair budgets (secondary metrics reported, not perfectly
+matched); some matrix cells use measurement caps, not judge caps; with $n=9$ a
+one-problem difference is within noise, so I read patterns, not decimals; cells
+are single runs of stochastic models; and the full16 stress run is my own sample
+suite, not the grader's private holdout.
