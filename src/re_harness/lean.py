@@ -70,21 +70,7 @@ def cleanup_session_containers(session_id: str) -> None:
         pass
 
 
-def _container_memory() -> str:
-    """Docker ``--memory`` for Lean/Comparator containers.
-
-    Kit default is ``5g``. On host-RAM-constrained machines (e.g. WSL2 on a
-    16 GB laptop) Mathlib import thrashs under that cap; set
-    ``LEAN_CONTAINER_MEMORY=8g`` locally. Judging uses the default unless the
-    judge environment overrides it.
-    """
-
-    raw = os.environ.get("LEAN_CONTAINER_MEMORY", "5g").strip() or "5g"
-    return raw
-
-
 def _hardened_docker_args(*, session_id: str, name: str, image: str) -> list[str]:
-    memory = _container_memory()
     return [
         "docker", "run", "--rm", "-i", "--pull=never",
         "--name", name,
@@ -94,7 +80,7 @@ def _hardened_docker_args(*, session_id: str, name: str, image: str) -> list[str
         "--user", "65532:65532",
         "--cap-drop=ALL",
         "--security-opt", "no-new-privileges=true",
-        "--memory", memory, "--memory-swap", memory,
+        "--memory", "5g", "--memory-swap", "5g",
         "--cpus", "2",
         "--pids-limit", "512",
         "--tmpfs", "/tmp:rw,nosuid,nodev,size=512m,mode=1777",

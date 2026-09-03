@@ -15,11 +15,7 @@ def atomic_write_text(path: Path, content: str, *, mode: int = 0o600) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
-        # os.fchmod is POSIX-only; Windows uses os.chmod on the path instead.
-        if hasattr(os, "fchmod"):
-            os.fchmod(fd, mode)
-        else:
-            os.chmod(tmp_name, mode)
+        os.fchmod(fd, mode)
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
             handle.write(content)
             handle.flush()
