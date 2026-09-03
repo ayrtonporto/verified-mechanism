@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "set": "regression-putnam",
+  "problems": [
+    {
+      "id": "putnam_2018_a1",
+      "theorem_names": [
+        "putnam_2018_a1"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    }
+  ]
+}

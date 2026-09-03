@@ -1,0 +1,14 @@
+.lake/
+**__pycache__**
+.env
+.venv/
+.pytest_cache/
+.pytest-tmp/
+*.egg-info/
+.bp-*-events*.jsonl
+
+# applicant: never track run artifacts / logs / secrets
+outputs/
+away/
+*.log
+.env.local

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "set": "S_eval",
+  "problems": [
+    {
+      "id": "p02_frac_cancel",
+      "theorem_names": [
+        "p02_frac_cancel"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    },
+    {
+      "id": "p04_sum_sq",
+      "theorem_names": [
+        "p04_sum_sq"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    },
+    {
+      "id": "p07_least_divisible",
+      "theorem_names": [
+        "p07_least_divisible"
+      ],
+      "definition_names": [
+        "p07_answer"
+      ],
+      "numeric_answer_names": [
+        "p07_answer"
+      ]
+    },
+    {
+      "id": "p08_sum_products",
+      "theorem_names": [
+        "p08_sum_products"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    },
+    {
+      "id": "rmo_2000_6",
+      "theorem_names": [
+        "rmo_2000_6"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    },
+    {
+      "id": "rmo_2001_2",
+      "theorem_names": [
+        "rmo_2001_2"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    },
+    {
+      "id": "putnam_2020_a2",
+      "theorem_names": [
+        "putnam_2020_a2"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    }
+  ]
+}

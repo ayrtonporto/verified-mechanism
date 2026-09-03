@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "set": "regression-hard2",
+  "problems": [
+    {
+      "id": "p10_factorial_pow",
+      "theorem_names": [
+        "p10_factorial_pow"
+      ],
+      "definition_names": [
+        "p10_answer"
+      ],
+      "numeric_answer_names": [
+        "p10_answer"
+      ]
+    },
+    {
+      "id": "putnam_2018_a1",
+      "theorem_names": [
+        "putnam_2018_a1"
+      ],
+      "definition_names": [],
+      "numeric_answer_names": []
+    }
+  ]
+}

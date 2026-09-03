@@ -1,0 +1,87 @@
+name: lean-runtime-image
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["lean-image-v*"]
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+env:
+  IMAGE: ghcr.io/verifiedmechanisms/re-takehome-lean
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:v4.32.0
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+      - name: Make applicant image public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh api --method PATCH
+          /orgs/verifiedmechanisms/packages/container/re-takehome-lean
+          -f visibility=public
+      - name: Exercise both native manifests
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          for platform in linux/amd64 linux/arm64; do
+            docker run --rm --pull=always --platform "$platform" \
+              --network=none --read-only --user 65532:65532 --cap-drop=ALL \
+              --security-opt no-new-privileges=true --memory 5g --memory-swap 5g \
+              --cpus 2 --pids-limit 512 \
+              --tmpfs /tmp:rw,nosuid,nodev,size=512m,mode=1777 \
+              --tmpfs /work:rw,nosuid,nodev,size=512m,mode=1777 \
+              "$IMAGE@$DIGEST" health | grep '"ok": true'
+            printf '%s' '{"challenge":"import Mathlib\n\ntheorem arch_smoke : True := by\n  sorry\n","solution":"import Mathlib\n\ntheorem arch_smoke : True := by\n  exact True.intro\n","theorem_names":["arch_smoke"],"definition_names":[],"permitted_axioms":["propext","Classical.choice","Quot.sound"]}' \
+              | docker run --rm -i --pull=never --platform "$platform" \
+                --network=none --read-only --user 65532:65532 --cap-drop=ALL \
+                --security-opt no-new-privileges=true --memory 5g --memory-swap 5g \
+                --cpus 2 --pids-limit 512 \
+                --tmpfs /tmp:rw,nosuid,nodev,size=512m,mode=1777 \
+                --tmpfs /work:rw,nosuid,nodev,size=512m,mode=1777 \
+                "$IMAGE@$DIGEST" compare | grep '"passed": true'
+          done
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign immutable image digest
+        run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - name: Record pin for repository update
+        run: |
+          mkdir -p image-release
+          printf '%s@%s\n' "$IMAGE" '${{ steps.build.outputs.digest }}' > image-release/lean-image.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-image-pin
+          path: image-release/lean-image.txt
